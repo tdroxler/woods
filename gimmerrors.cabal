@@ -9,7 +9,7 @@ cabal-version:       >=1.10
 executable gimmerrors
   main-is:             Main.hs
   build-depends:
-      base >=4.10 && <4.11
+      base >=4.10 && <4.12
     , network
     , bytestring
     , haskell-lsp-types == 0.2.2.0
