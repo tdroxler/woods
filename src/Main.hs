@@ -13,18 +13,17 @@ import qualified Data.ByteString.Lazy                  as BSL
 import           Data.List                             (drop, filter, map)
 import           Data.Maybe                            (maybeToList)
 import           GHC.Generics                          (Generic)
-import           Language.Haskell.LSP.Types.Capabilities hiding(_experimental, _colorProvider, _workspace)
-import           Language.Haskell.LSP.Types
 import           Network.Socket                        hiding (recv)
 import           Network.Socket                        (Family (AF_UNIX),
                                                         SockAddr (SockAddrUnix),
                                                         Socket,
                                                         SocketType (Stream),
                                                         defaultProtocol, socket)
-import           Network.Socket.ByteString             (recv, sendAll)
+import           Network.Socket.ByteString             (recv)
+import           Language.Haskell.LSP.Types
 import           System.Exit                           (exitSuccess)
 import           System.IO
-
+import LSP
 
 main :: IO ()
 main = withSocketsDo $ do
@@ -86,12 +85,9 @@ main = withSocketsDo $ do
       else do
         let (contents, rest) = consumeData $ BS.append prevData newData
         let publishDiagnostics = fromContents contents :: [PublishDiagnosticsNotification]
-        let diagWithError = filter diagnosticErrorExist publishDiagnostics
-        let diagWithErrorUri = map uriFromPublishDiagnosticsNotification diagWithError
-        let cleanedDiagnostic = filter (\e -> elem (uriFromPublishDiagnosticsNotification e) diags && notElem (uriFromPublishDiagnosticsNotification e) diagWithErrorUri) publishDiagnostics
-        let notCleanedYet = filter (\e -> notElem e (map uriFromPublishDiagnosticsNotification cleanedDiagnostic)) diags
-        mapM_ sendToClient (cleanedDiagnostic ++ diagWithError)
-        loop (notCleanedYet ++ diagWithErrorUri) sock rest
+        let (toSend, nextDiags) =  diagnosticsLoop diags publishDiagnostics
+        mapM_ sendToClient toSend
+        loop nextDiags sock rest
 
 
 listenClient :: ThreadId -> IO ()
@@ -114,6 +110,7 @@ listenClient serverThreadId = do
             killThread serverThreadId
             exitSuccess
         loop rest
+
 
 consumeData :: BS.ByteString -> ([BS.ByteString], BS.ByteString)
 consumeData msg =
@@ -171,63 +168,12 @@ sendToClient message =  do
     where
 
 
-diagnosticErrorExist :: PublishDiagnosticsNotification -> Bool
-diagnosticErrorExist = (\d -> case d of NotificationMessage _ _ params -> case params of PublishDiagnosticsParams _ diagnostics -> not (null diagnostics))
-
-
-uriFromPublishDiagnosticsNotification :: PublishDiagnosticsNotification -> Uri
-uriFromPublishDiagnosticsNotification notification = case notification of NotificationMessage _ _ param -> uriFromPublishDiagnosticsParams param
-
-
-uriFromPublishDiagnosticsParams :: PublishDiagnosticsParams -> Uri
-uriFromPublishDiagnosticsParams param = case param of PublishDiagnosticsParams uri _ -> uri
-
-
-initRepsonseFromRequest :: InitializeRequest -> InitializeResponse
-initRepsonseFromRequest request = case request of
-  (RequestMessage _ origId _ _) ->
-    ResponseMessage
-      "2.0"
-      (responseId origId)
-      (Just $ InitializeResponseCapabilities serverCapabilities)
-      Nothing
-
-
 logFile :: String -> IO ()
 logFile str = BSL.appendFile "/tmp/gimmerrors.log" $ BSL.fromStrict (BS.pack $ (str ++ "\n"))
 
 
 stringToBLS :: String -> BSL.ByteString
 stringToBLS = BSL.fromStrict . BS.pack
-
-
--- No serverCapabilities at all for now
-serverCapabilities =
-  InitializeResponseCapabilitiesInner
-    { _textDocumentSync                 = Nothing
-    , _hoverProvider                    = Just False
-    , _completionProvider               = Nothing
-    , _signatureHelpProvider            = Nothing
-    , _definitionProvider               = Just False
-    , _typeDefinitionProvider           = Nothing
-    , _implementationProvider           = Nothing
-    , _referencesProvider               = Just False
-    , _documentHighlightProvider        = Just False
-    , _documentSymbolProvider           = Just False
-    , _workspaceSymbolProvider          = Just False
-    , _codeActionProvider               = Just False
-    , _codeLensProvider                 = Nothing
-    , _documentFormattingProvider       = Just False
-    , _documentRangeFormattingProvider  = Just False
-    , _documentOnTypeFormattingProvider = Nothing
-    , _renameProvider                   = Just False
-    , _documentLinkProvider             = Nothing
-    , _colorProvider                    = Nothing
-    , _foldingRangeProvider             = Nothing
-    , _executeCommandProvider           = Nothing
-    , _workspace                        = Nothing
-    , _experimental                     = Nothing
-    }
 
 
 _TWO_CRLF = BS.pack "\r\n\r\n"
