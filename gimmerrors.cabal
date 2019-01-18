@@ -20,4 +20,5 @@ executable gimmerrors
   other-modules :
        JSONRPC
      , LSP
+     , Sbt
   default-language:    Haskell2010

@@ -5,7 +5,6 @@ module Main (main) where
 import           Control.Concurrent                    (ThreadId, forkIO,
                                                         killThread, threadDelay)
 import qualified Control.Exception                     as E
-import qualified Data.Aeson                            as JSON
 import qualified Data.ByteString.Char8                 as BS
 import qualified Data.ByteString.Lazy                  as BSL
 import           Data.List                             (drop, map)
@@ -22,6 +21,7 @@ import           System.Exit                           (exitSuccess)
 import           System.IO
 import           LSP
 import           JSONRPC
+import           Sbt
 
 main :: IO ()
 main = withSocketsDo $ do
@@ -45,28 +45,13 @@ main = withSocketsDo $ do
       close sock
     open :: IO Socket
     open = do
-      sock <- socket AF_UNIX Stream defaultProtocol
-      maybeSbtActive <- readSbtServerUri
-      case maybeSbtActive of
-        Nothing -> return sock
-        Just sbtActive -> do
-          -- Remove `local://` in front of the uri
-          let uri = drop 8 $ uriFromSbtActive sbtActive
-          logFile $ "SBT server uri: " ++ uri
-          res <- tryConnection sock uri
-          logFile "Trying to connect to server"
-          case res of
-            Left e -> do
-              logFile $ "Error while trying to connect to server: " ++ (show e)
-              close sock
-              threadDelay 1000000
-              logFile $ "Retrying to connect"
-              open
-            Right r -> do
-              logFile "Connected to server"
-              return sock
-    tryConnection :: Socket -> String -> IO (Either E.IOException ())
-    tryConnection sock uri = E.try $ (connect sock $ SockAddrUnix uri)
+      maybeSocket <- connectToSbtServer
+      case maybeSocket of
+        Nothing -> do
+          threadDelay 1000000
+          logFile $ "Retrying to connect"
+          open
+        Just sock -> return sock
     talk :: Socket -> IO ()
     talk sock = do
       res <- loop [] sock BS.empty
@@ -112,15 +97,3 @@ logFile :: String -> IO ()
 logFile str = BSL.appendFile "/tmp/gimmerrors.log" $ BSL.fromStrict (BS.pack $ (str ++ "\n"))
 
 
-data SbtActive =  SbtActive { uri :: String } deriving (Show, Generic, JSON.FromJSON)
-
-
-uriFromSbtActive :: SbtActive -> String
-uriFromSbtActive sbtActive = case sbtActive of
-  SbtActive uri -> uri
-
-
-readSbtServerUri :: IO (Maybe SbtActive)
-readSbtServerUri = do
-  str <- BSL.readFile "project/target/active.json"
-  return $ JSON.decode str
