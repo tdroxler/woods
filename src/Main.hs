@@ -13,7 +13,8 @@ import qualified Data.ByteString.Lazy                  as BSL
 import           Data.List                             (drop, filter, map)
 import           Data.Maybe                            (maybeToList)
 import           GHC.Generics                          (Generic)
-import           Language.Haskell.LSP.TH.DataTypesJSON
+import           Language.Haskell.LSP.Types.Capabilities hiding(_experimental, _colorProvider, _workspace)
+import           Language.Haskell.LSP.Types
 import           Network.Socket                        hiding (recv)
 import           Network.Socket                        (Family (AF_UNIX),
                                                         SockAddr (SockAddrUnix),
@@ -208,6 +209,8 @@ serverCapabilities =
     , _completionProvider               = Nothing
     , _signatureHelpProvider            = Nothing
     , _definitionProvider               = Just False
+    , _typeDefinitionProvider           = Nothing
+    , _implementationProvider           = Nothing
     , _referencesProvider               = Just False
     , _documentHighlightProvider        = Just False
     , _documentSymbolProvider           = Just False
@@ -219,7 +222,10 @@ serverCapabilities =
     , _documentOnTypeFormattingProvider = Nothing
     , _renameProvider                   = Just False
     , _documentLinkProvider             = Nothing
+    , _colorProvider                    = Nothing
+    , _foldingRangeProvider             = Nothing
     , _executeCommandProvider           = Nothing
+    , _workspace                        = Nothing
     , _experimental                     = Nothing
     }
 
