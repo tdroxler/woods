@@ -34,6 +34,7 @@ main = withSocketsDo $ do
       case res of
         Left e  -> do
           logFile ("Exception in server connection: " ++ (show e) ++ ". Retrying to connect")
+          threadDelay 1000000
           serverLoop
           --Trying to reconnect anyway
         Right a -> return a
