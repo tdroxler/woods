@@ -77,8 +77,9 @@ main = withSocketsDo $ do
         where
           loop :: BS.ByteString -> IO ()
           loop prevData = do
-            newData <- BSL.hGet stdin 1
-            let (contents, rest) = consumeData $ BS.append prevData (BSL.toStrict newData)
+            hWaitForInput stdin (-1)
+            newData <- BS.hGetNonBlocking stdin 2048
+            let (contents, rest) = consumeData $ BS.append prevData newData
             let initializes = fromContents contents :: [InitializeRequest]
             let exits = fromContents contents :: [ExitNotification]
             let response = (map initRepsonseFromRequest initializes)
