@@ -33,7 +33,7 @@ main = withSocketsDo $ do
       res <- serverConnection
       case res of
         Left e  -> do
-          logFile ("Exception in server connection: " ++ (show e))
+          logFile ("Exception in server connection: " ++ (show e) ++ ". Retrying to connect")
           serverLoop
           --Trying to reconnect anyway
         Right a -> return a
@@ -51,7 +51,9 @@ main = withSocketsDo $ do
           threadDelay 1000000
           logFile $ "Retrying to connect"
           open
-        Just sock -> return sock
+        Just sock -> do
+          logFile $ "Connected to sbt"
+          return sock
     talk :: Socket -> IO ()
     talk sock = do
       res <- loop [] sock BS.empty
@@ -96,5 +98,3 @@ main = withSocketsDo $ do
 
 logFile :: String -> IO ()
 logFile str = BSL.appendFile "/tmp/gimmerrors.log" $ BSL.fromStrict (BS.pack $ (str ++ "\n"))
-
-
