@@ -25,9 +25,8 @@ import           Sbt
 
 main :: IO ()
 main = withSocketsDo $ do
-  --TODO cleaner way to stop server loop when receiving `ExitNotification` from client?
-  serverThreadId <- forkIO serverLoop
-  listenClient serverThreadId
+  forkIO serverLoop
+  listenClient
   where
     serverLoop = do
       res <- serverConnection
@@ -74,8 +73,8 @@ main = withSocketsDo $ do
         let (toSend, nextDiags) =  diagnosticsLoop diags publishDiagnostics
         mapM_ sendToClient toSend
         loop nextDiags sock rest
-    listenClient :: ThreadId -> IO ()
-    listenClient serverThreadId = do
+    listenClient :: IO ()
+    listenClient = do
         loop BS.empty
         where
           loop :: BS.ByteString -> IO ()
@@ -92,7 +91,6 @@ main = withSocketsDo $ do
                 return ()
               exit -> do
                 logFile "<< ExitNotification from Client"
-                killThread serverThreadId
                 exitSuccess
             loop rest
 
