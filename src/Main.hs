@@ -5,6 +5,7 @@ module Main (main) where
 import           Control.Concurrent                    (ThreadId, forkIO,
                                                         killThread, threadDelay)
 import qualified Control.Exception                     as E
+import           Control.Monad (forever)
 import qualified Data.ByteString.Char8                 as BS
 import qualified Data.ByteString.Lazy                  as BSL
 import           Data.List                             (drop, map)
@@ -74,26 +75,38 @@ main = withSocketsDo $ do
         mapM_ sendToClient toSend
         loop nextDiags sock rest
     listenClient :: IO ()
-    listenClient = do
-        loop BS.empty
-        where
-          loop :: BS.ByteString -> IO ()
-          loop prevData = do
-            hWaitForInput stdin (-1)
-            newData <- BS.hGetNonBlocking stdin 2048
-            let (contents, rest) = consumeData $ BS.append prevData newData
-            let initializes = fromContents contents :: [InitializeRequest]
-            let exits = fromContents contents :: [ExitNotification]
-            let response = (map initRepsonseFromRequest initializes)
-            mapM_ sendToClient response
-            case exits of
-              [] -> do
-                return ()
-              exit -> do
-                logFile "<< ExitNotification from Client"
-                exitSuccess
-            loop rest
+    listenClient = forever $ do
+      hWaitForInput stdin (-1)
+      BS.hGetNonBlocking stdin 15 -- "Content-Length:"
+      size <- getContentLength
+      content <- BS.hGet stdin size
+      case (fromContent content :: Maybe InitializeRequest) of
+        Nothing -> do
+          return ()
+        Just initialize -> do
+          let response =  initRepsonseFromRequest initialize
+          sendToClient response
+      case (fromContent content :: Maybe ExitNotification) of
+        Nothing -> do
+          return ()
+        Just exit -> do
+          logFile "<< ExitNotification from Client"
+          exitSuccess
 
+
+getContentLength :: IO(Int)
+getContentLength = do
+  sizeBS <- loop BS.empty
+  return $ read (BS.unpack sizeBS)
+    where
+      loop :: BS.ByteString -> IO(BS.ByteString)
+      loop acc = do
+         char <- BS.hGet stdin 1
+         if  char == BS.pack "\r"
+            then do
+              rest <- BS.hGet stdin 3
+              return acc
+         else loop $ BS.append acc char
 
 logFile :: String -> IO ()
 logFile str = BSL.appendFile "/tmp/gimmerrors.log" $ BSL.fromStrict (BS.pack $ (str ++ "\n"))

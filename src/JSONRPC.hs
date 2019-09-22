@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module JSONRPC (consumeData, fromContents, sendToClient) where
+module JSONRPC (consumeData, fromContent, fromContents, sendToClient) where
 
 import qualified Data.ByteString.Char8                 as BS
 import qualified Data.ByteString.Lazy                  as BSL
@@ -52,6 +52,10 @@ fromContents :: JSON.FromJSON a => [BS.ByteString] -> [a]
 fromContents contents = do
   let maybes = map (\b -> JSON.decode (BSL.fromStrict b)) contents
   concat $ map (\m -> maybeToList m) maybes
+
+fromContent :: JSON.FromJSON a => BS.ByteString -> Maybe a
+fromContent content = do
+  JSON.decode (BSL.fromStrict content)
 
 sendToClient :: JSON.ToJSON a => a -> IO ()
 sendToClient message =  do
