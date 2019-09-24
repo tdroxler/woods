@@ -18,11 +18,14 @@ import           Network.Socket                        (Family (AF_UNIX),
                                                         defaultProtocol, socket)
 import           Network.Socket.ByteString             (recv)
 import           Language.Haskell.LSP.Types
+import           Language.Haskell.LSP.Types.Lens
+import           Lens.Micro
 import           System.Exit                           (exitSuccess)
 import           System.IO
 import           LSP
 import           JSONRPC
 import           Sbt
+import           JumpToDefinition
 
 main :: IO ()
 main = withSocketsDo $ do
@@ -80,15 +83,17 @@ main = withSocketsDo $ do
       BS.hGetNonBlocking stdin 15 -- "Content-Length:"
       size <- getContentLength
       content <- BS.hGet stdin size
+      case (fromContent content :: Maybe DefinitionRequest) of
+        Nothing -> return ()
+        Just definitionRequest ->
+          definitionRequestToResponse definitionRequest >>= sendToClient
       case (fromContent content :: Maybe InitializeRequest) of
-        Nothing -> do
-          return ()
+        Nothing -> return ()
         Just initialize -> do
           let response =  initRepsonseFromRequest initialize
           sendToClient response
       case (fromContent content :: Maybe ExitNotification) of
-        Nothing -> do
-          return ()
+        Nothing -> return ()
         Just exit -> do
           logFile "<< ExitNotification from Client"
           exitSuccess

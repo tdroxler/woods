@@ -1,9 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module LSP (diagnosticsLoop, initRepsonseFromRequest) where
+module LSP (diagnosticsLoop, initRepsonseFromRequest, definitionResponse) where
 
 import           Language.Haskell.LSP.Types.Capabilities hiding(_experimental, _colorProvider, _workspace)
 import           Language.Haskell.LSP.Types
+import           Language.Haskell.LSP.Types as L
 
 diagnosticsLoop :: [Uri] -> [PublishDiagnosticsNotification] -> ([PublishDiagnosticsNotification], [Uri])
 diagnosticsLoop store diagnostics = do
@@ -33,6 +34,20 @@ initRepsonseFromRequest request = case request of
       (Just $ InitializeResponseCapabilities serverCapabilities)
       Nothing
 
+
+definitionResponse :: DefinitionRequest -> Maybe L.Location -> DefinitionResponse
+definitionResponse request maybeLocation = case request of
+  (RequestMessage _ origId _ _) ->
+    ResponseMessage
+      "2.0"
+      (responseId origId)
+      (Just $
+        case maybeLocation of
+          Nothing -> MultiLoc []
+          Just loc -> SingleLoc loc)
+      Nothing
+
+
 -- No serverCapabilities at all for now
 serverCapabilities =
   InitializeResponseCapabilitiesInner
@@ -40,7 +55,7 @@ serverCapabilities =
     , _hoverProvider                    = Just False
     , _completionProvider               = Nothing
     , _signatureHelpProvider            = Nothing
-    , _definitionProvider               = Just False
+    , _definitionProvider               = Just True
     , _typeDefinitionProvider           = Nothing
     , _implementationProvider           = Nothing
     , _referencesProvider               = Just False

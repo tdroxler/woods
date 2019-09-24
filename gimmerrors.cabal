@@ -2,12 +2,18 @@ name:                gimmerrors
 version:             0.1.0.0
 author:              Thomas Droxler
 maintainer:          thomas.droxler@gmail.com
-build-type:          Simple
-extra-source-files:  ChangeLog.md
+build-type:          Custom
+extra-source-files:  proto/semanticdb.proto
 cabal-version:       >=1.10
 
-executable gimmerrors
-  main-is:             Main.hs
+custom-setup
+  setup-depends:
+      base >=4.12 && <4.13
+    , Cabal
+    , proto-lens-setup == 0.4.0.2
+
+
+library
   build-depends:
       base >=4.12 && <4.13
     , network == 3.1.0.1
@@ -15,10 +21,62 @@ executable gimmerrors
     , haskell-lsp-types == 0.15.0.0
     , attoparsec
     , aeson
-    ,  containers
+    , containers
+    , microlens == 0.4.11.2
+    , proto-lens == 0.5.0.0
+    , proto-lens-runtime == 0.5.0.0
+    , text == 1.2.3.1
+    , directory == 1.3.4.0
   hs-source-dirs:      src
-  other-modules :
+  other-modules:
+  exposed-modules:
        JSONRPC
      , LSP
      , Sbt
+     , JumpToDefinition
+     , Proto.Semanticdb
+     , Proto.Semanticdb_Fields
+  autogen-modules: Proto.Semanticdb, Proto.Semanticdb_Fields
   default-language:    Haskell2010
+  build-tool-depends: proto-lens-protoc:proto-lens-protoc
+
+executable gimmerrors
+  main-is: Main.hs
+  other-modules:
+    Paths_gimmerrors
+     , Proto.Semanticdb
+     , Proto.Semanticdb_Fields
+  hs-source-dirs: gimmerrors
+  autogen-modules: Proto.Semanticdb, Proto.Semanticdb_Fields
+  build-depends:
+      base
+    , gimmerrors
+    , network == 3.1.0.1
+    , bytestring
+    , haskell-lsp-types == 0.15.0.0
+    , attoparsec
+    , aeson
+    , containers
+    , microlens == 0.4.11.2
+    , proto-lens == 0.5.0.0
+    , proto-lens-runtime == 0.5.0.0
+    , text == 1.2.3.1
+  default-language:    Haskell2010
+
+test-suite test-gimmerrors
+  main-is: Spec.hs
+  hs-source-dirs:      test
+  other-modules:
+      JumpToDefinitionSpec
+    , Paths_gimmerrors
+  build-depends:
+      base >=4.12 && <4.13
+    , gimmerrors
+    , haskell-lsp-types == 0.15.0.0
+    , microlens == 0.4.11.2
+    , proto-lens == 0.5.0.0
+    , hspec
+    , directory == 1.3.4.0
+  type:                exitcode-stdio-1.0
+  default-language:    Haskell2010
+  build-tool-depends: hspec-discover:hspec-discover == 2.*
