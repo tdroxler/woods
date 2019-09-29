@@ -1,4 +1,4 @@
-name:                gimmerrors
+name:                woods
 version:             0.1.0.0
 author:              Thomas Droxler
 maintainer:          thomas.droxler@gmail.com
@@ -42,17 +42,17 @@ library
   default-language:    Haskell2010
   build-tool-depends: proto-lens-protoc:proto-lens-protoc
 
-executable gimmerrors
+executable woods
   main-is: Main.hs
   other-modules:
-    Paths_gimmerrors
+    Paths_woods
      , Proto.Semanticdb
      , Proto.Semanticdb_Fields
-  hs-source-dirs: gimmerrors
+  hs-source-dirs: woods
   autogen-modules: Proto.Semanticdb, Proto.Semanticdb_Fields
   build-depends:
       base
-    , gimmerrors
+    , woods
     , network == 3.1.0.1
     , bytestring
     , haskell-lsp-types == 0.15.0.0
@@ -64,15 +64,15 @@ executable gimmerrors
     , text == 1.2.3.1
   default-language:    Haskell2010
 
-test-suite test-gimmerrors
+test-suite test-woods
   main-is: Spec.hs
   hs-source-dirs:      test
   other-modules:
       JumpToDefinitionSpec
-    , Paths_gimmerrors
+    , Paths_woods
   build-depends:
       base >=4.12 && <4.13
-    , gimmerrors
+    , woods
     , haskell-lsp-types == 0.15.0.0
     , microlens == 0.4.11.2
     , proto-lens == 0.5.0.0

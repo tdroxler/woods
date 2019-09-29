@@ -1,4 +1,4 @@
-Gimmerrors
+Woods
 =====
 
 Minimal Scala LSP server that use sbt behind the scene.
@@ -15,4 +15,4 @@ addCompilerPlugin("org.scalameta" % "semanticdb-scalac" % "4.1.0" cross CrossVer
 scalacOptions += "-Yrangepos"
 ```
 
-You can have a look the the [example used for testing]("https://github.com/tdroxler/gimmerrors/tree/master/test/resources")
+You can have a look the the [example used for testing]("https://github.com/tdroxler/woods/tree/master/test/resources")

@@ -114,4 +114,4 @@ getContentLength = do
          else loop $ BS.append acc char
 
 logFile :: String -> IO ()
-logFile str = BSL.appendFile "/tmp/gimmerrors.log" $ BSL.fromStrict (BS.pack $ (str ++ "\n"))
+logFile str = BSL.appendFile "/tmp/woods.log" $ BSL.fromStrict (BS.pack $ (str ++ "\n"))
