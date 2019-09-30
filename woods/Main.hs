@@ -36,7 +36,6 @@ main = withSocketsDo $ do
       res <- serverConnection
       case res of
         Left e  -> do
-          logFile ("Exception in server connection: " ++ (show e) ++ ". Retrying to connect")
           threadDelay 1000000
           serverLoop
           --Trying to reconnect anyway
@@ -45,7 +44,6 @@ main = withSocketsDo $ do
     serverConnection = E.try $ E.bracket open closing talk
     closing :: Socket -> IO ()
     closing sock = do
-      logFile "Closing server socket"
       close sock
     open :: IO Socket
     open = do
@@ -53,10 +51,8 @@ main = withSocketsDo $ do
       case maybeSocket of
         Nothing -> do
           threadDelay 1000000
-          logFile $ "Retrying to connect"
           open
         Just sock -> do
-          logFile $ "Connected to sbt"
           return sock
     talk :: Socket -> IO ()
     talk sock = do
@@ -64,7 +60,6 @@ main = withSocketsDo $ do
       case res of
         Just a -> return ()
         Nothing -> do
-          logFile "Disconnected from server"
           serverLoop
     loop :: [Uri] -> Socket -> BS.ByteString -> IO (Maybe ())
     loop diags sock prevData = do
@@ -95,7 +90,6 @@ main = withSocketsDo $ do
       case (fromContent content :: Maybe ExitNotification) of
         Nothing -> return ()
         Just exit -> do
-          logFile "<< ExitNotification from Client"
           exitSuccess
 
 
@@ -112,6 +106,3 @@ getContentLength = do
               rest <- BS.hGet stdin 3
               return acc
          else loop $ BS.append acc char
-
-logFile :: String -> IO ()
-logFile str = BSL.appendFile "/tmp/woods.log" $ BSL.fromStrict (BS.pack $ (str ++ "\n"))
