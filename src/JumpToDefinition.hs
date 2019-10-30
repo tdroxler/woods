@@ -48,15 +48,24 @@ findLocationFromRequest definitionRequest = do
             -- yes, we can directly return the location
             Just definitionSymbol -> return $ Just $ lspLocation uri definitionSymbol
             Nothing -> do
-              -- No, we have to search in all project files for the definition.
-              maybeResult <- defnitionInProjectFiles symbolOccurence
-              case maybeResult of
-                Nothing -> return Nothing
-                Just symbolWithTextDocument -> do
-                  let definitionSymbol = fst symbolWithTextDocument
-                  let definitionTexDocument = snd symbolWithTextDocument
-                  definitionUri <- uriFromTextDocument definitionTexDocument
-                  return $ Just $ lspLocation definitionUri definitionSymbol
+              -- No, we'll try optimistic search, maybe the file has the same name as the symbol
+              maybeOptimistResult <- defnitionWithOptimisticSearch symbolOccurence
+              case maybeOptimistResult of
+                Just symbolWithTextDocument -> responseFromSymbolWithTextDocument symbolWithTextDocument
+                Nothing -> do
+                  -- No, we have to search in all project files for the definition.
+                  maybeResult <- defnitionInProjectFiles symbolOccurence
+                  case maybeResult of
+                    Nothing -> return Nothing
+                    Just symbolWithTextDocument -> responseFromSymbolWithTextDocument  symbolWithTextDocument
+
+
+responseFromSymbolWithTextDocument :: (S.SymbolOccurrence, S.TextDocument) -> IO (Maybe L.Location)
+responseFromSymbolWithTextDocument symbolWithTextDocument = do
+  let definitionSymbol = fst symbolWithTextDocument
+  let definitionTexDocument = snd symbolWithTextDocument
+  definitionUri <- uriFromTextDocument definitionTexDocument
+  return $ Just $ lspLocation definitionUri definitionSymbol
 
 
 textDocumentWthUri :: Uri -> IO (Maybe S.TextDocument)
@@ -92,17 +101,32 @@ definitionInTexDocument symbolOccurence textDocument =
       List.find (\symb -> symb^.symbol == symbolOccurence^.symbol && symb^.role == S.SymbolOccurrence'DEFINITION) (textDocument^.occurrences)
 
 
+defnitionWithOptimisticSearch :: S.SymbolOccurrence -> IO(Maybe (S.SymbolOccurrence, S.TextDocument))
+defnitionWithOptimisticSearch symbolOccurence = do
+  findFile (extractFileName symbolOccurence) >>= searchOccurence symbolOccurence
+  where
+  findFile fileName = getCurrentDirectory >>= Find.find always (Find.fileName ==? fileName)
+  extractFileName :: S.SymbolOccurrence -> FilePath
+  extractFileName symbolOccurence =
+    let
+      takeName = List.takeWhile (\char -> not (char == '.' || char == '#'))
+      dropPrefixPath = List.reverse . (List.takeWhile (\char -> not (char == '/' ))) . List.reverse
+    in
+      (takeName . dropPrefixPath $ T.unpack $ (symbolOccurence^.symbol)) ++ ".scala.semanticdb"
+
+
 defnitionInProjectFiles :: S.SymbolOccurrence -> IO(Maybe (S.SymbolOccurrence, S.TextDocument))
 defnitionInProjectFiles symbolOccurence = do
   listAllfiles >>= searchOccurence symbolOccurence
-  where
-    searchOccurence :: S.SymbolOccurrence -> [FilePath]  -> IO(Maybe (S.SymbolOccurrence, S.TextDocument))
-    searchOccurence symbol [] = return Nothing
-    searchOccurence symbol (filePath:tail) = do
-      maybeRes <- findOccurenceFromFilePath filePath symbol
-      case maybeRes of
-        Nothing -> searchOccurence symbol tail
-        Just res -> return $ Just res
+
+
+searchOccurence :: S.SymbolOccurrence -> [FilePath]  -> IO(Maybe (S.SymbolOccurrence, S.TextDocument))
+searchOccurence symbol [] = return Nothing
+searchOccurence symbol (filePath:tail) = do
+  maybeRes <- findOccurenceFromFilePath filePath symbol
+  case maybeRes of
+    Nothing -> searchOccurence symbol tail
+    Just res -> return $ Just res
 
 
 findOccurenceFromFilePath :: FilePath -> S.SymbolOccurrence -> IO(Maybe (S.SymbolOccurrence, S.TextDocument))
