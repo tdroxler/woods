@@ -68,6 +68,7 @@ test-suite test-woods
   hs-source-dirs:      test
   other-modules:
       JumpToDefinitionSpec
+    , Fixtures
     , Paths_woods
   build-depends:
       base
