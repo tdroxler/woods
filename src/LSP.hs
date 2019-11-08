@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module LSP (diagnosticsLoop, initRepsonseFromRequest, definitionResponse) where
+module LSP (diagnosticsLoop, initRepsonseFromRequest, definitionResponse, referencesResponse) where
 
 import           Language.Haskell.LSP.Types.Capabilities hiding(_experimental, _colorProvider, _workspace)
 import           Language.Haskell.LSP.Types
@@ -47,6 +47,15 @@ definitionResponse request maybeLocation = case request of
           Just loc -> SingleLoc loc)
       Nothing
 
+referencesResponse :: ReferencesRequest -> [L.Location] -> ReferencesResponse
+referencesResponse request locations = case request of
+  (RequestMessage _ origId _ _) ->
+    ResponseMessage
+      "2.0"
+      (responseId origId)
+      (Just $ List locations)
+      Nothing
+
 
 -- No serverCapabilities at all for now
 serverCapabilities =
@@ -58,7 +67,7 @@ serverCapabilities =
     , _definitionProvider               = Just True
     , _typeDefinitionProvider           = Nothing
     , _implementationProvider           = Nothing
-    , _referencesProvider               = Just False
+    , _referencesProvider               = Just True
     , _documentHighlightProvider        = Just False
     , _documentSymbolProvider           = Just False
     , _workspaceSymbolProvider          = Just False
