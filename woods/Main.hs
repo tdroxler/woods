@@ -26,6 +26,7 @@ import           LSP
 import           JSONRPC
 import           Sbt
 import           JumpToDefinition
+import           FindReferences
 
 main :: IO ()
 main = withSocketsDo $ do
@@ -78,6 +79,10 @@ main = withSocketsDo $ do
       BS.hGetNonBlocking stdin 15 -- "Content-Length:"
       size <- getContentLength
       content <- BS.hGet stdin size
+      case (fromContent content :: Maybe ReferencesRequest) of
+        Nothing -> return ()
+        Just referenceRequest ->
+          referenceRequestToResponse referenceRequest >>= sendToClient
       case (fromContent content :: Maybe DefinitionRequest) of
         Nothing -> return ()
         Just definitionRequest ->

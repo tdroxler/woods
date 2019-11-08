@@ -47,7 +47,6 @@ spec :: Spec
 spec = do
   describe "JumpToDefinition" $ do
     it "find the correct definition when cursor is already on the definition" $ do
-      setCurrentDirectory "test/resources"
       definitionRequestToResponse alreadyOnDefinitionRequest >>= shouldBe fooDefinitionResponse
     it "find the correct definition when in same file" $
       definitionRequestToResponse fooDefinitionRequest >>= shouldBe fooDefinitionResponse
