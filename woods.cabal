@@ -33,6 +33,7 @@ library
   exposed-modules:
        JSONRPC
      , LSP
+     , Helpers
      , Sbt
      , JumpToDefinition
      , Proto.Semanticdb
