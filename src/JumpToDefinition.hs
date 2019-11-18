@@ -28,15 +28,15 @@ definitionRequestToResponse definitionRequest =
 
 findLocationFromRequest :: DefinitionRequest -> IO (Maybe L.Location)
 findLocationFromRequest definitionRequest = do
-  let pos = definitionRequest^.LSPLens.params^.LSPLens.position
-  let uri = definitionRequest^.LSPLens.params^.LSPLens.textDocument^.LSPLens.uri
+  let pos = definitionRequest ^. (LSPLens.params . LSPLens.position)
+  let uri = definitionRequest ^. (LSPLens.params . (LSPLens.textDocument . LSPLens.uri))
   -- find the `TextDocument` of the request
   maybeTextDocument <- textDocumentWthUri uri
   case maybeTextDocument of
-    Nothing -> return $ Nothing
+    Nothing -> return Nothing
     -- find the symbol in the `TextDocument` at the given `Position`
     Just textDocument -> case occurrenceAtPosition pos textDocument of
-      Nothing -> return $ Nothing
+      Nothing -> return Nothing
       Just symbolOccurence ->
         case symbolOccurence^.role of
           S.SymbolOccurrence'UNKNOWN_ROLE -> return Nothing
@@ -60,7 +60,7 @@ findLocationFromRequest definitionRequest = do
 
 
 defnitionWithOptimisticSearch :: S.SymbolOccurrence -> IO(Maybe (S.SymbolOccurrence, S.TextDocument))
-defnitionWithOptimisticSearch symbolOccurence = do
+defnitionWithOptimisticSearch symbolOccurence =
   findFile (extractFileName symbolOccurence) >>= definitionFromFilePathes symbolOccurence
   where
   findFile fileName = getCurrentDirectory >>= Find.find always (Find.fileName ==? fileName)
@@ -68,13 +68,13 @@ defnitionWithOptimisticSearch symbolOccurence = do
   extractFileName symbolOccurence =
     let
       takeName = List.takeWhile (\char -> not (char == '.' || char == '#'))
-      dropPrefixPath = List.reverse . (List.takeWhile (\char -> not (char == '/' ))) . List.reverse
+      dropPrefixPath = List.reverse . List.takeWhile (/= '/') . List.reverse
     in
-      (takeName . dropPrefixPath $ T.unpack $ (symbolOccurence^.symbol)) ++ ".scala.semanticdb"
+      (takeName . dropPrefixPath $ T.unpack (symbolOccurence^.symbol)) ++ ".scala.semanticdb"
 
 
 findDefinitionInProjectFiles :: S.SymbolOccurrence -> IO(Maybe (S.SymbolOccurrence, S.TextDocument))
-findDefinitionInProjectFiles symbolOccurence = do
+findDefinitionInProjectFiles symbolOccurence =
   listAllfiles >>= definitionFromFilePathes symbolOccurence
 
 
@@ -92,14 +92,13 @@ definitionInTextDocuments _ [] = Nothing
 definitionInTextDocuments symbol (textDocument:tail) =
   case definitionSymbolInTextDocument symbol textDocument of
     Nothing -> definitionInTextDocuments symbol tail
-    Just res -> Just $ (res, textDocument)
+    Just res -> Just (res, textDocument)
 
 
 definitionSymbolInTextDocument :: S.SymbolOccurrence -> S.TextDocument -> Maybe S.SymbolOccurrence
 definitionSymbolInTextDocument symbolOccurence textDocument =
-  case (symbolOccurence^.role) of
+  case symbolOccurence^.role of
     S.SymbolOccurrence'UNKNOWN_ROLE -> Nothing
     S.SymbolOccurrence'DEFINITION -> Just symbolOccurence
     S.SymbolOccurrence'REFERENCE ->
       List.find (\symb -> symb^.symbol == symbolOccurence^.symbol && symb^.role == S.SymbolOccurrence'DEFINITION) (textDocument^.occurrences)
-

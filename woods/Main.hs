@@ -1,5 +1,3 @@
-{-# LANGUAGE DeriveAnyClass    #-}
-{-# LANGUAGE DeriveGeneric     #-}
 module Main (main) where
 
 import           Control.Concurrent                    (ThreadId, forkIO,
@@ -42,10 +40,7 @@ main = withSocketsDo $ do
           --Trying to reconnect anyway
         Right a -> return a
     serverConnection :: IO (Either E.IOException ())
-    serverConnection = E.try $ E.bracket open closing talk
-    closing :: Socket -> IO ()
-    closing sock = do
-      close sock
+    serverConnection = E.try $ E.bracket open close talk
     open :: IO Socket
     open = do
       maybeSocket <- connectToSbtServer
@@ -53,14 +48,14 @@ main = withSocketsDo $ do
         Nothing -> do
           threadDelay 1000000
           open
-        Just sock -> do
+        Just sock ->
           return sock
     talk :: Socket -> IO ()
     talk sock = do
       res <- loop [] sock BS.empty
       case res of
         Just a -> return ()
-        Nothing -> do
+        Nothing ->
           serverLoop
     loop :: [Uri] -> Socket -> BS.ByteString -> IO (Maybe ())
     loop diags sock prevData = do
@@ -94,16 +89,16 @@ main = withSocketsDo $ do
           sendToClient response
       case (fromContent content :: Maybe ExitNotification) of
         Nothing -> return ()
-        Just exit -> do
+        Just exit ->
           exitSuccess
 
 
-getContentLength :: IO(Int)
+getContentLength :: IO Int
 getContentLength = do
   sizeBS <- loop BS.empty
   return $ read (BS.unpack sizeBS)
     where
-      loop :: BS.ByteString -> IO(BS.ByteString)
+      loop :: BS.ByteString -> IO BS.ByteString
       loop acc = do
          char <- BS.hGet stdin 1
          if  char == BS.pack "\r"

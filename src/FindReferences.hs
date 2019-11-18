@@ -1,5 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
-
+{-# LANGUAGE TupleSections #-}
 module FindReferences (referenceRequestToResponse)  where
 import Data.Traversable (traverse, sequence)
 import Data.Int
@@ -27,16 +26,16 @@ referenceRequestToResponse referenceRequest =
   referencesResponse referenceRequest <$> findLocationsFromRequest referenceRequest
 
 
-findLocationsFromRequest :: ReferencesRequest -> IO ([L.Location])
+findLocationsFromRequest :: ReferencesRequest -> IO [L.Location]
 findLocationsFromRequest referenceRequest = do
-  let pos = referenceRequest^.LSPLens.params^.LSPLens.position
-  let uri = referenceRequest^.LSPLens.params^.LSPLens.textDocument^.LSPLens.uri
+  let pos = referenceRequest^.(LSPLens.params . LSPLens.position)
+  let uri = referenceRequest^.(LSPLens.params . LSPLens.textDocument . LSPLens.uri)
   -- find the `TextDocument` of the request
   maybeTextDocument <- textDocumentWthUri uri
   case maybeTextDocument of
-    Nothing -> return $ []
+    Nothing -> return []
     Just textDocument -> case occurrenceAtPosition pos textDocument of
-      Nothing -> return $ []
+      Nothing -> return []
       Just symbolOccurence ->
         case symbolOccurence^.role of
           S.SymbolOccurrence'UNKNOWN_ROLE -> return []
@@ -45,7 +44,7 @@ findLocationsFromRequest referenceRequest = do
             traverse locationFromSymbolWithTextDocument allSymbols
 
 
-findReferencesInProjectFiles :: S.SymbolOccurrence -> IO([(S.SymbolOccurrence, S.TextDocument)])
+findReferencesInProjectFiles :: S.SymbolOccurrence -> IO [(S.SymbolOccurrence, S.TextDocument)]
 findReferencesInProjectFiles symbolOccurence = do
   textDocuments <- listAllfiles >>= traverse  listTextDocumentFromFilePath
   return $ List.concat textDocuments >>=  sameSymbolsInTexDocument symbolOccurence
@@ -53,4 +52,4 @@ findReferencesInProjectFiles symbolOccurence = do
 
 sameSymbolsInTexDocument :: S.SymbolOccurrence -> S.TextDocument -> [(S.SymbolOccurrence, S.TextDocument)]
 sameSymbolsInTexDocument symbolOccurence textDocument =
-  fmap (\occurence -> (occurence, textDocument)) (List.filter (\symb -> symb^.symbol == symbolOccurence^.symbol) (textDocument^.occurrences))
+  fmap (, textDocument) (List.filter (\symb -> symb^.symbol == symbolOccurence^.symbol) (textDocument^.occurrences))

@@ -44,9 +44,9 @@ moduleDefinitionResponse = mkResponse moduleLocation
 
 
 spec :: Spec
-spec = do
+spec =
   describe "JumpToDefinition" $ do
-    it "find the correct definition when cursor is already on the definition" $ do
+    it "find the correct definition when cursor is already on the definition" $
       definitionRequestToResponse alreadyOnDefinitionRequest >>= shouldBe fooDefinitionResponse
     it "find the correct definition when in same file" $
       definitionRequestToResponse fooDefinitionRequest >>= shouldBe fooDefinitionResponse

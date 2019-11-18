@@ -9,7 +9,7 @@ import System.IO.Unsafe (unsafePerformIO)
 import Data.Text as T
 import Lens.Micro
 
-currentDirectory = "file://" ++ (unsafePerformIO getCurrentDirectory)
+currentDirectory = "file://" ++ unsafePerformIO getCurrentDirectory
 
 fooPath =  currentDirectory ++ "/src/main/scala/Foo.scala"
 

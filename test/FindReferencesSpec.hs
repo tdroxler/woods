@@ -35,8 +35,8 @@ fooReferencesResponse = mkResponse [fooInBarLocation, fooLocation, printFooLocat
 
 
 spec :: Spec
-spec = do
-  describe "FindReferences" $ do
+spec =
+  describe "FindReferences" $
     it "find all references correctly" $ do
       setCurrentDirectory "test/resources"
       referenceRequestToResponse fooReferencesRequest >>= shouldBe fooReferencesResponse

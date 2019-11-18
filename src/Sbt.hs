@@ -11,7 +11,7 @@ import           System.IO
 import           Network.Socket                        hiding (recv)
 
 
-data SbtActive =  SbtActive { uri :: String } deriving (Show, Generic, JSON.FromJSON)
+newtype SbtActive =  SbtActive { uri :: String } deriving (Show, Generic, JSON.FromJSON)
 
 connectToSbtServer :: IO (Maybe Socket)
 connectToSbtServer = do
@@ -27,12 +27,12 @@ connectToSbtServer = do
         Left e -> do
           close sock
           return Nothing
-        Right r -> do
+        Right r ->
           return $ Just sock
 
 
 tryConnection :: Socket -> String -> IO (Either E.IOException ())
-tryConnection sock uri = E.try $ (connect sock $ SockAddrUnix uri)
+tryConnection sock uri = E.try (connect sock $ SockAddrUnix uri)
 
 uriFromSbtActive :: SbtActive -> String
 uriFromSbtActive sbtActive = case sbtActive of

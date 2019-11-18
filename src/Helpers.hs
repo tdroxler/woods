@@ -2,7 +2,6 @@ module Helpers where
 
 import Data.Text as T
 import Language.Haskell.LSP.Types as L
-import Language.Haskell.LSP.Types
 import Data.Int
 import Lens.Micro
 import Data.List as List
@@ -29,7 +28,7 @@ isPosititionInRange position range =
 int32ToInt :: Int32 -> Int
 int32ToInt int32 = fromIntegral int32 :: Int
 
-listAllfiles :: IO([FilePath])
+listAllfiles :: IO [FilePath]
 listAllfiles = getCurrentDirectory >>= Find.find always (extension ==? ".semanticdb")
 
 
@@ -41,10 +40,10 @@ locationFromSymbolWithTextDocument symbolWithTextDocument = do
   return $ lspLocation definitionUri definitionSymbol
 
 
-uriFromTextDocument :: S.TextDocument -> IO (Uri)
+uriFromTextDocument :: S.TextDocument -> IO Uri
 uriFromTextDocument textDocument = do
   currentDirectory  <- getCurrentDirectory
-  return $ Uri (T.pack( ("file://" ++ currentDirectory ++ "/" ++ (T.unpack $ textDocument^.uri))))
+  return $ Uri (T.pack( "file://" ++ currentDirectory ++ "/" ++ T.unpack (textDocument^.uri)))
 
 
 lspLocation :: Uri -> S.SymbolOccurrence -> L.Location
@@ -85,7 +84,7 @@ textDocumentWthUri uri = do
 textDocumentFromUriAndSemanticdbFile :: FilePath -> FilePath -> IO(Maybe S.TextDocument)
 textDocumentFromUriAndSemanticdbFile uri semanticdbFile = do
   maybeTextDocuments <- decodeTextDocuments  <$> BS.readFile semanticdbFile
-  return $ (maybeTextDocuments >>= textDocumentWithUri uri)
+  return (maybeTextDocuments >>= textDocumentWithUri uri)
 
 decodeTextDocuments :: BS.ByteString -> Maybe S.TextDocuments
 decodeTextDocuments message =
@@ -98,10 +97,10 @@ textDocumentWithUri :: FilePath -> S.TextDocuments -> Maybe S.TextDocument
 textDocumentWithUri uri textDocuments = List.find (isSameUri uri) $ textDocuments ^.documents
 
 isSameUri :: FilePath -> S.TextDocument -> Bool
-isSameUri filePath textDocument =  (T.unpack $ textDocument^.uri) == filePath
+isSameUri filePath textDocument =  T.unpack (textDocument^.uri) == filePath
 
 
-listTextDocumentFromFilePath :: FilePath -> IO ([S.TextDocument])
+listTextDocumentFromFilePath :: FilePath -> IO [S.TextDocument]
 listTextDocumentFromFilePath filePath = do
   message <- BS.readFile filePath
   return $ case decodeTextDocuments message of

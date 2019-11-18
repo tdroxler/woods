@@ -3,7 +3,6 @@
 module LSP (diagnosticsLoop, initRepsonseFromRequest, definitionResponse, referencesResponse) where
 
 import           Language.Haskell.LSP.Types.Capabilities hiding(_experimental, _colorProvider, _workspace)
-import           Language.Haskell.LSP.Types
 import           Language.Haskell.LSP.Types as L
 
 diagnosticsLoop :: [Uri] -> [PublishDiagnosticsNotification] -> ([PublishDiagnosticsNotification], [Uri])
@@ -11,13 +10,13 @@ diagnosticsLoop store diagnostics = do
     let diagWithError = filter diagnosticErrorExist diagnostics
     let diagWithErrorUri = map uriFromPublishDiagnosticsNotification diagWithError
     let cleanedDiagnostic = filter (\e -> elem (uriFromPublishDiagnosticsNotification e) store && notElem (uriFromPublishDiagnosticsNotification e) diagWithErrorUri) diagnostics
-    let notCleanedYet = filter (\e -> notElem e (map uriFromPublishDiagnosticsNotification cleanedDiagnostic)) store
+    let notCleanedYet = filter (\e -> e `notElem` map uriFromPublishDiagnosticsNotification cleanedDiagnostic) store
     let toSend = cleanedDiagnostic ++ diagWithError
     let newStore =notCleanedYet ++ diagWithErrorUri
     (toSend, newStore)
 
 diagnosticErrorExist :: PublishDiagnosticsNotification -> Bool
-diagnosticErrorExist = (\d -> case d of NotificationMessage _ _ params -> case params of PublishDiagnosticsParams _ diagnostics -> not (null diagnostics))
+diagnosticErrorExist d = case d of NotificationMessage _ _ params -> case params of PublishDiagnosticsParams _ diagnostics -> not (null diagnostics)
 
 uriFromPublishDiagnosticsNotification :: PublishDiagnosticsNotification -> Uri
 uriFromPublishDiagnosticsNotification notification = case notification of NotificationMessage _ _ param -> uriFromPublishDiagnosticsParams param
