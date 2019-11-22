@@ -1,23 +1,15 @@
+{-# LANGUAGE DeriveGeneric #-}
 module Main (main) where
 
-import           Control.Concurrent                    (ThreadId, forkIO,
-                                                        killThread, threadDelay)
+import           Control.Concurrent                    (forkIO, threadDelay)
 import qualified Control.Exception                     as E
 import           Control.Monad (forever)
 import qualified Data.ByteString.Char8                 as BS
-import qualified Data.ByteString.Lazy                  as BSL
-import           Data.List                             (drop, map)
-import           GHC.Generics                          (Generic)
+import qualified Data.Aeson                            as JSON
 import           Network.Socket                        hiding (recv)
-import           Network.Socket                        (Family (AF_UNIX),
-                                                        SockAddr (SockAddrUnix),
-                                                        Socket,
-                                                        SocketType (Stream),
-                                                        defaultProtocol, socket)
+import           Network.Socket                        (Socket)
 import           Network.Socket.ByteString             (recv)
 import           Language.Haskell.LSP.Types
-import           Language.Haskell.LSP.Types.Lens
-import           Lens.Micro
 import           System.Exit                           (exitSuccess)
 import           System.IO
 import           LSP
@@ -25,6 +17,12 @@ import           JSONRPC
 import           Sbt
 import           JumpToDefinition
 import           FindReferences
+import           GHC.Generics
+
+newtype Method = Method {
+  method :: ClientMethod
+} deriving (Generic, Show)
+instance JSON.FromJSON Method
 
 main :: IO ()
 main = withSocketsDo $ do
@@ -74,23 +72,23 @@ main = withSocketsDo $ do
       BS.hGetNonBlocking stdin 15 -- "Content-Length:"
       size <- getContentLength
       content <- BS.hGet stdin size
-      case (fromContent content :: Maybe ReferencesRequest) of
+      case fromContent content :: Maybe Method of
+        Just (Method Initialize) ->
+          methodHandler content (return . initRepsonseFromRequest)
+        Just (Method TextDocumentReferences) ->
+          methodHandler content referenceRequestToResponse
+        Just (Method TextDocumentDefinition) ->
+          methodHandler content definitionRequestToResponse
+        Just (Method Exit) -> exitSuccess
+        Just other -> return ()
         Nothing -> return ()
-        Just referenceRequest ->
-          referenceRequestToResponse referenceRequest >>= sendToClient
-      case (fromContent content :: Maybe DefinitionRequest) of
-        Nothing -> return ()
-        Just definitionRequest ->
-          definitionRequestToResponse definitionRequest >>= sendToClient
-      case (fromContent content :: Maybe InitializeRequest) of
-        Nothing -> return ()
-        Just initialize -> do
-          let response =  initRepsonseFromRequest initialize
-          sendToClient response
-      case (fromContent content :: Maybe ExitNotification) of
-        Nothing -> return ()
-        Just exit ->
-          exitSuccess
+      where
+        methodHandler :: JSON.FromJSON a => JSON.ToJSON b => BS.ByteString ->  (a -> IO b) -> IO()
+        methodHandler content requestToResponse =
+          case fromContent content of
+            Nothing -> return ()
+            Just thing ->
+              requestToResponse thing  >>= sendToClient
 
 
 getContentLength :: IO Int
