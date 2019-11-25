@@ -3,7 +3,7 @@
 module LSP (diagnosticsLoop, initRepsonseFromRequest, definitionResponse, referencesResponse) where
 
 import           Language.Haskell.LSP.Types.Capabilities hiding(_experimental, _colorProvider, _workspace)
-import           Language.Haskell.LSP.Types as L
+import           Language.Haskell.LSP.Types
 
 diagnosticsLoop :: [Uri] -> [PublishDiagnosticsNotification] -> ([PublishDiagnosticsNotification], [Uri])
 diagnosticsLoop store diagnostics = do
@@ -34,7 +34,7 @@ initRepsonseFromRequest request = case request of
       Nothing
 
 
-definitionResponse :: DefinitionRequest -> Maybe L.Location -> DefinitionResponse
+definitionResponse :: DefinitionRequest -> Maybe Location -> DefinitionResponse
 definitionResponse request maybeLocation = case request of
   (RequestMessage _ origId _ _) ->
     ResponseMessage
@@ -46,7 +46,7 @@ definitionResponse request maybeLocation = case request of
           Just loc -> SingleLoc loc)
       Nothing
 
-referencesResponse :: ReferencesRequest -> [L.Location] -> ReferencesResponse
+referencesResponse :: ReferencesRequest -> [Location] -> ReferencesResponse
 referencesResponse request locations = case request of
   (RequestMessage _ origId _ _) ->
     ResponseMessage

@@ -9,9 +9,9 @@ import qualified Data.Aeson                            as JSON
 import           Network.Socket                        hiding (recv)
 import           Network.Socket                        (Socket)
 import           Network.Socket.ByteString             (recv)
-import           Language.Haskell.LSP.Types
+import qualified Language.Haskell.LSP.Types as LSP
 import           System.Exit                           (exitSuccess)
-import           System.IO
+import           System.IO                             (IO, hWaitForInput, stdin)
 import           LSP
 import           JSONRPC
 import           Sbt
@@ -20,7 +20,7 @@ import           FindReferences
 import           GHC.Generics
 
 newtype Method = Method {
-  method :: ClientMethod
+  method :: LSP.ClientMethod
 } deriving (Generic, Show)
 instance JSON.FromJSON Method
 
@@ -55,14 +55,14 @@ main = withSocketsDo $ do
         Just a -> return ()
         Nothing ->
           serverLoop
-    loop :: [Uri] -> Socket -> BS.ByteString -> IO (Maybe ())
+    loop :: [LSP.Uri] -> Socket -> BS.ByteString -> IO (Maybe ())
     loop diags sock prevData = do
       newData <- recv sock 1024
       if newData == BS.empty
         then return Nothing
       else do
         let (contents, rest) = consumeData $ BS.append prevData newData
-        let publishDiagnostics = fromContents contents :: [PublishDiagnosticsNotification]
+        let publishDiagnostics = fromContents contents :: [LSP.PublishDiagnosticsNotification]
         let (toSend, nextDiags) =  diagnosticsLoop diags publishDiagnostics
         mapM_ sendToClient toSend
         loop nextDiags sock rest
@@ -73,13 +73,13 @@ main = withSocketsDo $ do
       size <- getContentLength
       content <- BS.hGet stdin size
       case fromContent content :: Maybe Method of
-        Just (Method Initialize) ->
+        Just (Method LSP.Initialize) ->
           methodHandler content (return . initRepsonseFromRequest)
-        Just (Method TextDocumentReferences) ->
+        Just (Method LSP.TextDocumentReferences) ->
           methodHandler content referenceRequestToResponse
-        Just (Method TextDocumentDefinition) ->
+        Just (Method LSP.TextDocumentDefinition) ->
           methodHandler content definitionRequestToResponse
-        Just (Method Exit) -> exitSuccess
+        Just (Method LSP.Exit) -> exitSuccess
         Just other -> return ()
         Nothing -> return ()
       where

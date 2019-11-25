@@ -1,28 +1,27 @@
 module Helpers where
 
 import Data.Text as T
-import Language.Haskell.LSP.Types as L
+import qualified Language.Haskell.LSP.Types as L
 import Data.Int
 import Lens.Micro
 import Data.List as List
 import Data.ProtoLens (decodeMessage)
-import Proto.Semanticdb as S
+import qualified Proto.Semanticdb as S
 import Proto.Semanticdb_Fields (documents, occurrences, role, symbol, startLine, endLine, startCharacter, endCharacter, range, uri)
-import Lens.Micro.Extras (view)
 import System.FilePath.Find as Find
 import System.Directory (getCurrentDirectory)
 import System.FilePath.Posix (makeRelative)
 import qualified Data.ByteString.Char8 as BS
 
-occurrenceAtPosition :: Position -> S.TextDocument -> Maybe S.SymbolOccurrence
+occurrenceAtPosition :: L.Position -> S.TextDocument -> Maybe S.SymbolOccurrence
 occurrenceAtPosition position textDocument = List.find (\symbol -> isPosititionInRange position (symbol^.range)) (textDocument^.occurrences)
 
-isPosititionInRange :: Position -> S.Range -> Bool
+isPosititionInRange :: L.Position -> S.Range -> Bool
 isPosititionInRange position range =
-     _line position >= int32ToInt  (range^.startLine)
-  && _line position <= int32ToInt  (range^.endLine)
-  && _character position >= int32ToInt  (range^.startCharacter)
-  && _character position <= int32ToInt  (range^.endCharacter)
+     L._line position >= int32ToInt  (range^.startLine)
+  && L._line position <= int32ToInt  (range^.endLine)
+  && L._character position >= int32ToInt  (range^.startCharacter)
+  && L._character position <= int32ToInt  (range^.endCharacter)
 
 
 int32ToInt :: Int32 -> Int
@@ -40,13 +39,13 @@ locationFromSymbolWithTextDocument symbolWithTextDocument = do
   return $ lspLocation definitionUri definitionSymbol
 
 
-uriFromTextDocument :: S.TextDocument -> IO Uri
+uriFromTextDocument :: S.TextDocument -> IO L.Uri
 uriFromTextDocument textDocument = do
   currentDirectory  <- getCurrentDirectory
-  return $ Uri (T.pack( "file://" ++ currentDirectory ++ "/" ++ T.unpack (textDocument^.uri)))
+  return $ L.Uri (T.pack( "file://" ++ currentDirectory ++ "/" ++ T.unpack (textDocument^.uri)))
 
 
-lspLocation :: Uri -> S.SymbolOccurrence -> L.Location
+lspLocation :: L.Uri -> S.SymbolOccurrence -> L.Location
 lspLocation uri symbolOccurence =
   L.Location
     uri
@@ -58,13 +57,13 @@ semanticdbRangeToLSPRange sRange =
   let
     startPosition = L.Position (int32ToInt (sRange^.startLine)) (int32ToInt (sRange^.startCharacter))
     endPosition = L.Position (int32ToInt (sRange^.endLine)) (int32ToInt (sRange^.endCharacter))
-  in Range startPosition endPosition
+  in L.Range startPosition endPosition
 
 
-textDocumentWthUri :: Uri -> IO (Maybe S.TextDocument)
+textDocumentWthUri :: L.Uri -> IO (Maybe S.TextDocument)
 textDocumentWthUri uri = do
   currentDirectory <- getCurrentDirectory
-  let maybeFilePath = fmap (makeRelative currentDirectory) (uriToFilePath uri)
+  let maybeFilePath = fmap (makeRelative currentDirectory) (L.uriToFilePath uri)
   case maybeFilePath of
     Nothing -> return Nothing
     Just filePath -> do

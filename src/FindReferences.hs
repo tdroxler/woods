@@ -1,22 +1,17 @@
 {-# LANGUAGE TupleSections #-}
+
 module FindReferences (referenceRequestToResponse)  where
-import Data.Traversable (traverse, sequence)
-import Data.Int
+
+import Data.Traversable (traverse)
 import Lens.Micro
 import Lens.Micro.Extras (view)
 import qualified Language.Haskell.LSP.Types.Lens as LSPLens
-import Language.Haskell.LSP.Types as L
-import Language.Haskell.LSP.Types (Uri, uriToFilePath, getUri, _line, _character )
-import Data.Text as T
+import qualified Language.Haskell.LSP.Types as L
+import Language.Haskell.LSP.Types (ReferencesRequest, ReferencesResponse, )
 import Data.List as List
-import qualified Data.ByteString.Char8 as BS
-import Data.ProtoLens (decodeMessage)
-import System.FilePath.Find as Find
-import System.Directory (getCurrentDirectory)
-import System.FilePath.Posix (makeRelative)
 
 import Proto.Semanticdb as S
-import Proto.Semanticdb_Fields (documents, occurrences, role, symbol, startLine, endLine, startCharacter, endCharacter, range, uri)
+import Proto.Semanticdb_Fields (occurrences, role, symbol)
 import LSP
 import Helpers
 

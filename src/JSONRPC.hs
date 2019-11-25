@@ -6,7 +6,7 @@ import qualified Data.ByteString.Lazy                  as BSL
 import           Data.Attoparsec.ByteString.Char8
 import qualified Data.Aeson                            as JSON
 import           Data.Maybe                            (catMaybes)
-import           System.IO
+import           System.IO                             (IO, hFlush, stdout)
 
 consumeData :: BS.ByteString -> ([BS.ByteString], BS.ByteString)
 consumeData =
