@@ -17,6 +17,7 @@ import           JSONRPC
 import           Sbt
 import           JumpToDefinition
 import           FindReferences
+import           Hover
 import           GHC.Generics
 
 newtype Method = Method {
@@ -79,6 +80,8 @@ main = withSocketsDo $ do
           methodHandler content referenceRequestToResponse
         Just (Method TextDocumentDefinition) ->
           methodHandler content definitionRequestToResponse
+        Just (Method TextDocumentHover) ->
+          methodHandler content hoverRequestToResponse
         Just (Method Exit) -> exitSuccess
         Just other -> return ()
         Nothing -> return ()

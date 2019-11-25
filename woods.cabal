@@ -37,11 +37,11 @@ library
      , Sbt
      , JumpToDefinition
      , FindReferences
+     , Hover
      , Proto.Semanticdb
      , Proto.Semanticdb_Fields
   autogen-modules: Proto.Semanticdb, Proto.Semanticdb_Fields
   default-language:    Haskell2010
-  build-tool-depends: proto-lens-protoc:proto-lens-protoc
 
 executable woods
   main-is: Main.hs
@@ -84,4 +84,3 @@ test-suite test-woods
     , bytestring
   type:                exitcode-stdio-1.0
   default-language:    Haskell2010
-  build-tool-depends: hspec-discover:hspec-discover <= 2.6 && < 2.7

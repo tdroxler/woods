@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module JumpToDefinition (definitionRequestToResponse) where
 
 import Data.Int
@@ -37,68 +35,10 @@ findLocationFromRequest definitionRequest = do
     -- find the symbol in the `TextDocument` at the given `Position`
     Just textDocument -> case occurrenceAtPosition pos textDocument of
       Nothing -> return Nothing
-      Just symbolOccurence ->
-        case symbolOccurence^.role of
-          S.SymbolOccurrence'UNKNOWN_ROLE -> return Nothing
-          -- the symbol is already the definition itself
-          S.SymbolOccurrence'DEFINITION -> return $ Just $ lspLocation uri symbolOccurence
-          -- the symbol is a reference, we search first if it's defined in the same file
-          S.SymbolOccurrence'REFERENCE ->  case definitionSymbolInTextDocument symbolOccurence textDocument of
-            -- yes, we can directly return the location
-            Just definitionSymbol -> return $ Just $ lspLocation uri definitionSymbol
-            Nothing -> do
-              -- No, we'll try optimistic search, maybe the file has the same name as the symbol
-              maybeOptimistResult <- defnitionWithOptimisticSearch symbolOccurence
-              case maybeOptimistResult of
-                Just symbolWithTextDocument -> Just <$> locationFromSymbolWithTextDocument  symbolWithTextDocument
-                Nothing -> do
-                  -- No, we have to search in all project files for the definition.
-                  maybeResult <- findDefinitionInProjectFiles symbolOccurence
-                  case maybeResult of
-                    Nothing -> return Nothing
-                    Just symbolWithTextDocument -> Just <$> locationFromSymbolWithTextDocument  symbolWithTextDocument
-
-
-defnitionWithOptimisticSearch :: S.SymbolOccurrence -> IO(Maybe (S.SymbolOccurrence, S.TextDocument))
-defnitionWithOptimisticSearch symbolOccurence =
-  findFile (extractFileName symbolOccurence) >>= definitionFromFilePathes symbolOccurence
-  where
-  findFile fileName = getCurrentDirectory >>= Find.find always (Find.fileName ==? fileName)
-  extractFileName :: S.SymbolOccurrence -> FilePath
-  extractFileName symbolOccurence =
-    let
-      takeName = List.takeWhile (\char -> not (char == '.' || char == '#'))
-      dropPrefixPath = List.reverse . List.takeWhile (/= '/') . List.reverse
-    in
-      (takeName . dropPrefixPath $ T.unpack (symbolOccurence^.symbol)) ++ ".scala.semanticdb"
-
-
-findDefinitionInProjectFiles :: S.SymbolOccurrence -> IO(Maybe (S.SymbolOccurrence, S.TextDocument))
-findDefinitionInProjectFiles symbolOccurence =
-  listAllfiles >>= definitionFromFilePathes symbolOccurence
-
-
-definitionFromFilePathes :: S.SymbolOccurrence -> [FilePath]  -> IO(Maybe (S.SymbolOccurrence, S.TextDocument))
-definitionFromFilePathes symbol [] = return Nothing
-definitionFromFilePathes symbol (filePath:tail) = do
-  maybeRes <- definitionInTextDocuments symbol <$> listTextDocumentFromFilePath filePath
-  case maybeRes of
-    Nothing -> definitionFromFilePathes symbol tail
-    Just res -> return $ Just res
-
-
-definitionInTextDocuments :: S.SymbolOccurrence -> [S.TextDocument] -> Maybe (S.SymbolOccurrence, S.TextDocument)
-definitionInTextDocuments _ [] = Nothing
-definitionInTextDocuments symbol (textDocument:tail) =
-  case definitionSymbolInTextDocument symbol textDocument of
-    Nothing -> definitionInTextDocuments symbol tail
-    Just res -> Just (res, textDocument)
-
-
-definitionSymbolInTextDocument :: S.SymbolOccurrence -> S.TextDocument -> Maybe S.SymbolOccurrence
-definitionSymbolInTextDocument symbolOccurence textDocument =
-  case symbolOccurence^.role of
-    S.SymbolOccurrence'UNKNOWN_ROLE -> Nothing
-    S.SymbolOccurrence'DEFINITION -> Just symbolOccurence
-    S.SymbolOccurrence'REFERENCE ->
-      List.find (\symb -> symb^.symbol == symbolOccurence^.symbol && symb^.role == S.SymbolOccurrence'DEFINITION) (textDocument^.occurrences)
+      Just symbolOccurence -> do
+        maybeDefinition <- findDefinition symbolOccurence textDocument
+        case maybeDefinition of
+          Nothing -> return Nothing
+          Just symbolWithTextDocument -> do
+            print maybeDefinition
+            Just <$> locationFromSymbolWithTextDocument  symbolWithTextDocument

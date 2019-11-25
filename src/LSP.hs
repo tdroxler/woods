@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module LSP (diagnosticsLoop, initRepsonseFromRequest, definitionResponse, referencesResponse) where
+module LSP (diagnosticsLoop, initRepsonseFromRequest, definitionResponse, referencesResponse, hoverResponse) where
 
 import           Language.Haskell.LSP.Types.Capabilities hiding(_experimental, _colorProvider, _workspace)
 import           Language.Haskell.LSP.Types as L
@@ -55,12 +55,21 @@ referencesResponse request locations = case request of
       (Just $ List locations)
       Nothing
 
+hoverResponse :: HoverRequest -> Maybe Hover -> HoverResponse
+hoverResponse request maybeHover = case request of
+  (RequestMessage _ origId _ _) ->
+    ResponseMessage
+      "2.0"
+      (responseId origId)
+      (Just maybeHover)
+      Nothing
+
 
 -- No serverCapabilities at all for now
 serverCapabilities =
   InitializeResponseCapabilitiesInner
     { _textDocumentSync                 = Nothing
-    , _hoverProvider                    = Just False
+    , _hoverProvider                    = Just True
     , _completionProvider               = Nothing
     , _signatureHelpProvider            = Nothing
     , _definitionProvider               = Just True

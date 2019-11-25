@@ -53,4 +53,4 @@ spec =
     it "find the correct definition when in different file" $
       definitionRequestToResponse fooInBarDefinitionRequest >>= shouldBe fooDefinitionResponse
     it "find the correct definition when in other module" $
-      definitionRequestToResponse moduleInFooDefinitionRequest >>= shouldBe moduleDefinitionResponse
+      definitionRequestToResponse moduleInFooDefinitionRequest >>= shouldBe fooDefinitionResponse
