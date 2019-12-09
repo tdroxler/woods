@@ -1,6 +1,7 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric     #-}
 module Main (main) where
 
+import qualified Data.ByteString.Lazy                  as BSL
 import           Control.Concurrent                    (forkIO, threadDelay)
 import qualified Control.Exception                     as E
 import           Control.Monad (forever)
@@ -49,58 +50,29 @@ main = withSocketsDo $ do
         Just sock ->
           return sock
     talk :: Socket -> IO ()
-    talk sock = do
-      res <- loop [] sock BS.empty
-      case res of
-        Just a -> return ()
-        Nothing ->
-          serverLoop
-    loop :: [LSP.Uri] -> Socket -> BS.ByteString -> IO (Maybe ())
-    loop diags sock prevData = do
-      newData <- recv sock 1024
-      if newData == BS.empty
-        then return Nothing
-      else do
-        let (contents, rest) = consumeData $ BS.append prevData newData
-        let publishDiagnostics = fromContents contents :: [LSP.PublishDiagnosticsNotification]
-        let (toSend, nextDiags) =  diagnosticsLoop diags publishDiagnostics
-        mapM_ sendToClient toSend
-        loop nextDiags sock rest
+    talk sock =
+      jsonRpcLoop (recv sock 1024) [] handleContent >> serverLoop
+    handleContent content diags = do
+      let publishDiagnostics = fromContents [content] :: [LSP.PublishDiagnosticsNotification]
+      let (toSend, nextDiags) =  diagnosticsLoop diags publishDiagnostics
+      mapM_ sendToClient toSend >> return nextDiags
     listenClient :: IO ()
-    listenClient = forever $ do
-      hWaitForInput stdin (-1)
-      BS.hGetNonBlocking stdin 15 -- "Content-Length:"
-      size <- getContentLength
-      content <- BS.hGet stdin size
-      case fromContent content :: Maybe Method of
-        Just (Method LSP.Initialize) ->
-          methodHandler content (return . initRepsonseFromRequest)
-        Just (Method LSP.TextDocumentReferences) ->
-          methodHandler content referenceRequestToResponse
-        Just (Method LSP.TextDocumentDefinition) ->
-          methodHandler content definitionRequestToResponse
-        Just (Method LSP.Exit) -> exitSuccess
-        Just other -> return ()
-        Nothing -> return ()
+    listenClient = jsonRpcLoop (hWaitForInput stdin (-1) >> BS.hGetNonBlocking stdin 1024) () handleClientContent
       where
-        methodHandler :: JSON.FromJSON a => JSON.ToJSON b => BS.ByteString ->  (a -> IO b) -> IO()
-        methodHandler content requestToResponse =
-          case fromContent content of
+        handleClientContent content _ =
+          case fromContent content :: Maybe Method of
+            Just (Method LSP.Initialize) ->
+              methodHandler content (return . initRepsonseFromRequest)
+            Just (Method LSP.TextDocumentReferences) ->
+              methodHandler content referenceRequestToResponse
+            Just (Method LSP.TextDocumentDefinition) ->
+              methodHandler content definitionRequestToResponse
+            Just (Method LSP.Exit) -> exitSuccess
+            Just other -> return ()
             Nothing -> return ()
-            Just thing ->
-              requestToResponse thing  >>= sendToClient
-
-
-getContentLength :: IO Int
-getContentLength = do
-  sizeBS <- loop BS.empty
-  return $ read (BS.unpack sizeBS)
-    where
-      loop :: BS.ByteString -> IO BS.ByteString
-      loop acc = do
-         char <- BS.hGet stdin 1
-         if  char == BS.pack "\r"
-            then do
-              rest <- BS.hGet stdin 3
-              return acc
-         else loop $ BS.append acc char
+          where
+            methodHandler :: JSON.FromJSON a => JSON.ToJSON b => BS.ByteString ->  (a -> IO b) -> IO()
+            methodHandler content requestToResponse =
+              case fromContent content of
+                Nothing -> return ()
+                Just thing -> requestToResponse thing  >>= sendToClient

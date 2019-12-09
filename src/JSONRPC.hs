@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module JSONRPC (consumeData, fromContent, fromContents, sendToClient) where
+module JSONRPC (fromContent, fromContents, sendToClient, jsonRpcLoop) where
 
 import qualified Data.ByteString.Char8                 as BS
 import qualified Data.ByteString.Lazy                  as BSL
@@ -8,22 +8,34 @@ import qualified Data.Aeson                            as JSON
 import           Data.Maybe                            (catMaybes)
 import           System.IO                             (IO, hFlush, stdout)
 
-consumeData :: BS.ByteString -> ([BS.ByteString], BS.ByteString)
-consumeData =
-    consume []
+
+jsonRpcLoop :: IO BS.ByteString -> s -> (BS.ByteString -> s -> IO s) -> IO s
+jsonRpcLoop consumer state =
+  ioLoop consumer state BS.empty
   where
-    consume :: [BS.ByteString] -> BS.ByteString -> ([BS.ByteString], BS.ByteString)
-    consume acc msg =
-      case readContentLength msg of
+    ioLoop consumer state acc action = do
+      newData <- consumer
+      if newData == BS.empty
+        then return state
+      else loop acc newData state action
+    loop :: BS.ByteString -> BS.ByteString -> s ->  (BS.ByteString -> s -> IO s) -> IO s
+    loop acc newData state action = do
+      let fullData = BS.append acc newData
+      let (maybeMessage, rest) = extractJsonRpcMessage fullData
+      case maybeMessage of
+        Just  message -> do
+          newState <- action message state
+          loop rest BS.empty newState action
+        Nothing -> ioLoop consumer state fullData action
+
+
+extractJsonRpcMessage :: BS.ByteString -> (Maybe BS.ByteString, BS.ByteString)
+extractJsonRpcMessage acc =
+      case readContentLength acc of
         Done rst len ->
-          let (maybeContent, rest) = getMsg len rst
-          in case maybeContent of
-            Just content ->
-              consume (acc ++ [content]) rest
-            Nothing ->
-              (acc, msg)
+          getMsg len rst
         _ ->
-          (acc, msg)
+          (Nothing, acc)
 
 
 readContentLength :: BS.ByteString -> IResult BS.ByteString Int
@@ -33,9 +45,9 @@ readContentLength = parse contentLengthParser
 contentLengthParser :: Parser Int
 contentLengthParser = do
   _ <- string "Content-Length: "
-  len <- takeTill (== '\r')
+  len <- decimal
   _ <- manyTill anyChar (string _TWO_CRLF)
-  return (read (BS.unpack len) :: Int)
+  return len
 
 
 getMsg :: Int -> BS.ByteString -> (Maybe BS.ByteString, BS.ByteString)
