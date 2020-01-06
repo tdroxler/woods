@@ -1,6 +1,6 @@
 { mkDerivation, aeson, attoparsec, base, bytestring, Cabal
 , directory, filemanip, filepath, haskell-lsp-types, hspec
-, hspec-discover, microlens, network_3_1_1_0, proto-lens, proto-lens-protoc
+, hspec-discover, microlens, network_3_1_1_1, proto-lens, proto-lens-protoc
 , proto-lens-runtime, proto-lens-setup, stdenv, text, pkgs
 }:
 mkDerivation {
@@ -13,12 +13,12 @@ mkDerivation {
   buildTools = [ pkgs.protobuf ];
   libraryHaskellDepends = [
     aeson attoparsec base bytestring directory filemanip filepath
-    haskell-lsp-types microlens network_3_1_1_0 proto-lens proto-lens-runtime
-    text 
+    haskell-lsp-types microlens network_3_1_1_1 proto-lens proto-lens-runtime
+    text
   ];
   libraryToolDepends = [ proto-lens-protoc ];
   executableHaskellDepends = [
-    aeson base bytestring haskell-lsp-types microlens network_3_1_1_0
+    aeson base bytestring haskell-lsp-types microlens network_3_1_1_1
     proto-lens proto-lens-runtime text
   ];
   testHaskellDepends = [
