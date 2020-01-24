@@ -34,16 +34,16 @@ initRepsonseFromRequest request = case request of
       Nothing
 
 
-definitionResponse :: DefinitionRequest -> Maybe Location -> DefinitionResponse
-definitionResponse request maybeLocation = case request of
+definitionResponse :: DefinitionRequest -> [Location] -> DefinitionResponse
+definitionResponse request locations = case request of
   (RequestMessage _ origId _ _) ->
     ResponseMessage
       "2.0"
       (responseId origId)
       (Just $
-        case maybeLocation of
-          Nothing -> MultiLoc []
-          Just loc -> SingleLoc loc)
+        case locations of
+          (location : []) -> SingleLoc location
+          _ -> MultiLoc locations)
       Nothing
 
 referencesResponse :: ReferencesRequest -> [Location] -> ReferencesResponse

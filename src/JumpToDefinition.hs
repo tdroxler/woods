@@ -22,37 +22,37 @@ definitionRequestToResponse :: DefinitionRequest -> IO DefinitionResponse
 definitionRequestToResponse definitionRequest =
   definitionResponse definitionRequest <$> findLocationFromRequest definitionRequest
 
-findLocationFromRequest :: DefinitionRequest -> IO (Maybe L.Location)
+findLocationFromRequest :: DefinitionRequest -> IO ([L.Location])
 findLocationFromRequest definitionRequest = do
   let pos = definitionRequest ^. (LSPLens.params . LSPLens.position)
   let uri = definitionRequest ^. (LSPLens.params . (LSPLens.textDocument . LSPLens.uri))
   -- find the `TextDocument` of the request
   maybeTextDocument <- textDocumentWthUri uri
   case maybeTextDocument of
-    Nothing -> return Nothing
+    Nothing -> return []
     -- find the symbol in the `TextDocument` at the given `Position`
     Just textDocument -> case occurrenceAtPosition pos textDocument of
-      Nothing -> return Nothing
-      Just symbolOccurence ->
+      Nothing -> return []
+      Just symbolOccurence -> do
         case symbolOccurence^.role of
-          S.SymbolOccurrence'UNKNOWN_ROLE -> return Nothing
+          S.SymbolOccurrence'UNKNOWN_ROLE -> return []
           -- the symbol is already the definition itself
-          S.SymbolOccurrence'DEFINITION -> return $ Just $ lspLocation uri symbolOccurence
+          S.SymbolOccurrence'DEFINITION -> return $ [lspLocation uri symbolOccurence]
           -- the symbol is a reference, we search first if it's defined in the same file
           S.SymbolOccurrence'REFERENCE ->  case definitionSymbolInTextDocument symbolOccurence textDocument of
             -- yes, we can directly return the location
-            Just definitionSymbol -> return $ Just $ lspLocation uri definitionSymbol
+            Just definitionSymbol -> return $ [lspLocation uri definitionSymbol]
             Nothing -> do
               -- No, we'll try optimistic search, maybe the file has the same name as the symbol
               maybeOptimistResult <- defnitionWithOptimisticSearch symbolOccurence
               case maybeOptimistResult of
-                Just symbolWithTextDocument -> Just <$> locationFromSymbolWithTextDocument  symbolWithTextDocument
+                Just symbolWithTextDocument -> return <$> locationFromSymbolWithTextDocument symbolWithTextDocument
                 Nothing -> do
                   -- No, we have to search in all project files for the definition.
                   maybeResult <- findDefinitionInProjectFiles symbolOccurence
                   case maybeResult of
-                    Nothing -> return Nothing
-                    Just symbolWithTextDocument -> Just <$> locationFromSymbolWithTextDocument  symbolWithTextDocument
+                    Nothing -> return []
+                    Just symbolWithTextDocument -> return <$> locationFromSymbolWithTextDocument symbolWithTextDocument
 
 
 defnitionWithOptimisticSearch :: S.SymbolOccurrence -> IO(Maybe (S.SymbolOccurrence, S.TextDocument))
