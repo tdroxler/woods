@@ -29,6 +29,9 @@ alreadyOnDefinitionRequest = mkRequest fooTextDocumentIdentifier fooPosition
 moduleInFooDefinitionRequest :: DefinitionRequest
 moduleInFooDefinitionRequest = mkRequest fooTextDocumentIdentifier moduleInFooPosition
 
+stringDependencyRequest :: DefinitionRequest
+stringDependencyRequest = mkRequest fooTextDocumentIdentifier stringPosition
+
 mkResponse location =
     ResponseMessage
       "2.0"
@@ -43,6 +46,10 @@ moduleDefinitionResponse :: DefinitionResponse
 moduleDefinitionResponse = mkResponse moduleLocation
 
 
+stringDefinitionResponse :: DefinitionResponse
+stringDefinitionResponse = mkResponse stringLocation
+
+
 spec :: Spec
 spec =
   describe "JumpToDefinition" $ do
@@ -54,3 +61,5 @@ spec =
       definitionRequestToResponse fooInBarDefinitionRequest >>= shouldBe fooDefinitionResponse
     it "find the correct definition when in other module" $
       definitionRequestToResponse moduleInFooDefinitionRequest >>= shouldBe moduleDefinitionResponse
+    it "find dependencies definition with tags file" $
+      definitionRequestToResponse stringDependencyRequest >>= shouldBe stringDefinitionResponse

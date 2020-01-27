@@ -16,6 +16,7 @@ import Proto.Semanticdb as S
 import Proto.Semanticdb_Fields (occurrences, role, symbol)
 import LSP
 import Helpers
+import CTags
 
 
 definitionRequestToResponse :: DefinitionRequest -> IO DefinitionResponse
@@ -24,6 +25,13 @@ definitionRequestToResponse definitionRequest =
 
 findLocationFromRequest :: DefinitionRequest -> IO ([L.Location])
 findLocationFromRequest definitionRequest = do
+  maybeLocations <- semantidbLocationFromRequest definitionRequest
+  case maybeLocations of
+    [] -> ctagsLocationFromRequest definitionRequest
+    [locations] -> return maybeLocations
+
+semantidbLocationFromRequest :: DefinitionRequest -> IO ([L.Location])
+semantidbLocationFromRequest definitionRequest = do
   let pos = definitionRequest ^. (LSPLens.params . LSPLens.position)
   let uri = definitionRequest ^. (LSPLens.params . (LSPLens.textDocument . LSPLens.uri))
   -- find the `TextDocument` of the request

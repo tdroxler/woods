@@ -1,0 +1,59 @@
+#!/bin/sh
+
+json=$1
+tag_file=$2
+
+current_directory=`pwd`
+
+id=`echo $json | jq -r '.id'`
+method=`echo $json | jq -r '.method'`
+uri=`echo $json | jq -r '.params.textDocument.uri' | sed 's/file:\/\///'`
+
+line_nb_str=`echo $json | jq '.params.position.line'`
+line_nb=$(($line_nb_str+ 1 ))
+
+char_nb_str=`echo $json | jq '.params.position.character'`
+char_nb=$(($char_nb_str+ 1 ))
+
+line_to_search=`cat $uri | sed "${line_nb}q;d"`
+
+start_line=${line_to_search:0:char_nb}
+end_line=${line_to_search:char_nb}
+
+start_symbol=`echo $start_line | grep -o '[a-zA-Z0-9]*$'`
+end_symbol=`echo $end_line | grep -o '^[a-zA-Z0-9]*'`
+
+symbol="$start_symbol$end_symbol"
+
+IFS=$'\t'
+
+locations=$(cat $tag_file | grep -P "^$symbol\t" | while read -r col1 col2 col3 ; do
+
+  pattern=`echo $col3 | sed 's/;".*//' | sed 's/\[/\\\[/g; s/\]/\\\]/g'`
+
+  line=`cat $col2 | sed -n "$pattern{=;q}"`
+
+  if [ "$line" != "" ]; then
+    lsp_line=$(($line- 1 ))
+    start_position="{\"line\":$lsp_line,\"character\":0}"
+    end_position="{\"line\":$lsp_line,\"character\":0}"
+    range="{\"start\":$start_position,\"end\":$end_position}"
+
+    if [[ $col2 == /* ]]; then
+      uri="file://$col2"
+    else
+      uri="file://$current_directory/$col2"
+    fi
+
+    location="{\"uri\":\"$uri\",\"range\":$range}"
+
+    echo "$location"
+  fi
+
+done)
+
+location_list="[`echo $locations | tr '\n' ',' |  sed 's/,$/\n/'`]"
+
+response="{\"jsonrpc\":\"2.0\",\"id\":$id,\"result\":$location_list}"
+
+echo "$response"
