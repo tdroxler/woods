@@ -1,0 +1,10 @@
+Bar	src/main/scala/Bar.scala	/^object Bar {$/;"	o
+Foo	src/main/scala/Foo.scala	/^object Foo {$/;"	o
+Module	module/src/main/scala/Module.scala	/^object Module {$/;"	o
+String	whatever-deps-folder/Predef.scala	/^trait String$/;"	t
+bar	src/main/scala/Bar.scala	/^  def bar = foo$/;"	m
+foo	src/main/scala/Foo.scala	/^  val foo: String = "foo"$/;"	n
+main	src/main/scala/Foo.scala	/^  def main(args: Array[String]): Unit = {$/;"	m
+module	module/src/main/scala/Module.scala	/^  val module: Int = 1$/;"	n
+module	src/main/scala/Foo.scala	/^    val module = Module.module$/;"	n
+scala	whatever-deps-folder/Predef.scala	/^package scala$/;"	p
