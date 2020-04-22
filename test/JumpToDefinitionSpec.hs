@@ -12,7 +12,7 @@ mkRequest identifier position =
   RequestMessage
     "2.0"
     messageId
-    TextDocumentDefinition $ TextDocumentPositionParams identifier position
+    TextDocumentDefinition $ TextDocumentPositionParams identifier position Nothing
 
 
 fooDefinitionRequest :: DefinitionRequest

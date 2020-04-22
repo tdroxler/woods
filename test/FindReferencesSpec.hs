@@ -15,7 +15,7 @@ mkRequest identifier position =
   RequestMessage
     "2.0"
     messageId
-    TextDocumentReferences $ ReferenceParams identifier position (ReferenceContext False)
+    TextDocumentReferences $ ReferenceParams identifier position (ReferenceContext False) Nothing
 
 
 fooReferencesRequest :: ReferencesRequest
