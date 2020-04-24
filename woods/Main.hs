@@ -54,8 +54,7 @@ main = withSocketsDo $ do
       jsonRpcLoop (recv sock 1024) [] handleContent >> serverLoop
     handleContent content diags = do
       let publishDiagnostics = fromContents [content] :: [LSP.PublishDiagnosticsNotification]
-      let (toSend, nextDiags) =  diagnosticsLoop diags publishDiagnostics
-      mapM_ sendToClient toSend >> return nextDiags
+      mapM_ sendToClient publishDiagnostics >> return []
     listenClient :: IO ()
     listenClient = jsonRpcLoop (hWaitForInput stdin (-1) >> BS.hGetNonBlocking stdin 1024) () handleClientContent
       where

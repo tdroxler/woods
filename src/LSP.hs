@@ -1,28 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module LSP (diagnosticsLoop, initRepsonseFromRequest, definitionResponse, referencesResponse) where
+module LSP (initRepsonseFromRequest, definitionResponse, referencesResponse) where
 
 import           Language.Haskell.LSP.Types.Capabilities hiding(_experimental, _colorProvider, _workspace)
 import           Language.Haskell.LSP.Types
-
-diagnosticsLoop :: [Uri] -> [PublishDiagnosticsNotification] -> ([PublishDiagnosticsNotification], [Uri])
-diagnosticsLoop store diagnostics = do
-    let diagWithError = filter diagnosticErrorExist diagnostics
-    let diagWithErrorUri = map uriFromPublishDiagnosticsNotification diagWithError
-    let cleanedDiagnostic = filter (\e -> elem (uriFromPublishDiagnosticsNotification e) store && notElem (uriFromPublishDiagnosticsNotification e) diagWithErrorUri) diagnostics
-    let notCleanedYet = filter (\e -> e `notElem` map uriFromPublishDiagnosticsNotification cleanedDiagnostic) store
-    let toSend = cleanedDiagnostic ++ diagWithError
-    let newStore =notCleanedYet ++ diagWithErrorUri
-    (toSend, newStore)
-
-diagnosticErrorExist :: PublishDiagnosticsNotification -> Bool
-diagnosticErrorExist d = case d of NotificationMessage _ _ params -> case params of PublishDiagnosticsParams _ diagnostics -> not (null diagnostics)
-
-uriFromPublishDiagnosticsNotification :: PublishDiagnosticsNotification -> Uri
-uriFromPublishDiagnosticsNotification notification = case notification of NotificationMessage _ _ param -> uriFromPublishDiagnosticsParams param
-
-uriFromPublishDiagnosticsParams :: PublishDiagnosticsParams -> Uri
-uriFromPublishDiagnosticsParams param = case param of PublishDiagnosticsParams uri _ -> uri
 
 initRepsonseFromRequest :: InitializeRequest -> InitializeResponse
 initRepsonseFromRequest request = case request of
