@@ -18,6 +18,7 @@ import           JSONRPC
 import           Sbt
 import           JumpToDefinition
 import           FindReferences
+import           Rename
 import           GHC.Generics
 
 newtype Method = Method {
@@ -58,7 +59,7 @@ main = withSocketsDo $ do
     listenClient :: IO ()
     listenClient = jsonRpcLoop (hWaitForInput stdin (-1) >> BS.hGetNonBlocking stdin 1024) () handleClientContent
       where
-        handleClientContent content _ =
+        handleClientContent content _ = do
           case fromContent content :: Maybe Method of
             Just (Method LSP.Initialize) ->
               methodHandler content (return . initRepsonseFromRequest)
@@ -66,6 +67,8 @@ main = withSocketsDo $ do
               methodHandler content referenceRequestToResponse
             Just (Method LSP.TextDocumentDefinition) ->
               methodHandler content definitionRequestToResponse
+            Just (Method LSP.TextDocumentRename) ->
+              methodHandler content renameRequestToResponse
             Just (Method LSP.Exit) -> exitSuccess
             Just other -> return ()
             Nothing -> return ()

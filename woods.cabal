@@ -38,6 +38,7 @@ library
      , Sbt
      , JumpToDefinition
      , FindReferences
+     , Rename
      , CTags
      , Proto.Semanticdb
      , Proto.Semanticdb_Fields

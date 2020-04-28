@@ -12,6 +12,7 @@ import System.FilePath.Find as Find
 import System.Directory (getCurrentDirectory)
 import System.FilePath.Posix (makeRelative)
 import qualified Data.ByteString.Char8 as BS
+import qualified Data.ByteString.Lazy                  as BSL
 
 occurrenceAtPosition :: L.Position -> S.TextDocument -> Maybe S.SymbolOccurrence
 occurrenceAtPosition position textDocument = List.find (\symbol -> isPosititionInRange position (symbol^.range)) (textDocument^.occurrences)
@@ -105,3 +106,7 @@ listTextDocumentFromFilePath filePath = do
   return $ case decodeTextDocuments message of
     Nothing -> []
     Just textDocuments ->  textDocuments ^.documents
+
+
+logFile :: String -> IO ()
+logFile str = BSL.appendFile "/tmp/woods.log" $ BSL.fromStrict (BS.pack $ (str ++ "\n"))
