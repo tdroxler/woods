@@ -1,9 +1,11 @@
 { mkDerivation, aeson, attoparsec, base, bytestring, Cabal
 , directory, filemanip, filepath, haskell-lsp-types, hspec
 , hspec-discover, microlens, network, proto-lens, proto-lens-protoc
-, proto-lens-runtime, proto-lens-setup, stdenv, text, pkgs
+, proto-lens-runtime, proto-lens-setup, stdenv, text, pkgs, jq
 }:
-mkDerivation {
+let
+  tags-lsp = pkgs.writeShellScriptBin "tags-lsp" (builtins.readFile ./bin/tags-lsp);
+in mkDerivation {
   pname = "woods";
   version = "0.1.0.0";
   src = ./.;
@@ -16,7 +18,7 @@ mkDerivation {
     haskell-lsp-types microlens network proto-lens proto-lens-runtime
     text
   ];
-  libraryToolDepends = [ proto-lens-protoc ];
+  libraryToolDepends = [ tags-lsp jq proto-lens-protoc ];
   executableHaskellDepends = [
     aeson base bytestring haskell-lsp-types microlens network
     proto-lens proto-lens-runtime text
@@ -25,7 +27,7 @@ mkDerivation {
     base bytestring directory haskell-lsp-types hspec microlens
     proto-lens text
   ];
-  testToolDepends = [ hspec-discover ];
+  testToolDepends = [ tags-lsp jq hspec-discover ];
   license = "unknown";
   hydraPlatforms = stdenv.lib.platforms.none;
 }
