@@ -1,6 +1,6 @@
 {-# LANGUAGE TupleSections #-}
 
-module FindReferences (referenceRequestToResponse)  where
+module FindReferences (referenceRequestToResponse, findLocations)  where
 
 import Data.Traversable (traverse)
 import Lens.Micro
@@ -25,7 +25,10 @@ findLocationsFromRequest :: ReferencesRequest -> IO [L.Location]
 findLocationsFromRequest referenceRequest = do
   let pos = referenceRequest^.(LSPLens.params . LSPLens.position)
   let uri = referenceRequest^.(LSPLens.params . LSPLens.textDocument . LSPLens.uri)
-  -- find the `TextDocument` of the request
+  findLocations uri pos
+
+findLocations :: L.Uri -> L.Position -> IO [L.Location]
+findLocations uri pos = do
   maybeTextDocument <- textDocumentWthUri uri
   case maybeTextDocument of
     Nothing -> return []

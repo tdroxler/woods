@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module LSP (initRepsonseFromRequest, definitionResponse, referencesResponse) where
+module LSP (initRepsonseFromRequest, definitionResponse, referencesResponse, renameResponse) where
 
 import           Language.Haskell.LSP.Types.Capabilities hiding(_experimental, _colorProvider, _workspace)
 import           Language.Haskell.LSP.Types
@@ -34,6 +34,15 @@ referencesResponse request locations = case request of
       "2.0"
       (responseId origId)
       (Just $ List locations)
+      Nothing
+
+renameResponse :: RenameRequest ->  RenameResponse
+renameResponse request = case request of
+  (RequestMessage _ origId _ _) ->
+    ResponseMessage
+      "2.0"
+      (responseId origId)
+      Nothing
       Nothing
 
 
