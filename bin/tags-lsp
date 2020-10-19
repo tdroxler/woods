@@ -2,6 +2,7 @@
 
 json=$1
 tag_file=$2
+hint=$3
 
 current_directory=`pwd`
 
@@ -27,7 +28,7 @@ symbol="$start_symbol$end_symbol"
 
 IFS=$'\t'
 
-locations=$(cat $tag_file | grep -P "^$symbol\t" | while read -r col1 col2 col3 ; do
+locations=$(cat $tag_file | grep -P "^$symbol\t" | grep "$hint" | while read -r col1 col2 col3 ; do
 
   pattern=`echo $col3 | sed 's/;".*//' | sed 's/\[/\\\[/g; s/\]/\\\]/g'`
 

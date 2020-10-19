@@ -27,8 +27,8 @@ findLocationFromRequest :: DefinitionRequest -> IO ([L.Location])
 findLocationFromRequest definitionRequest = do
   maybeLocations <- semantidbLocationFromRequest definitionRequest
   case maybeLocations of
-    [] -> ctagsLocationFromRequest definitionRequest
-    [locations] -> return maybeLocations
+    [] -> ctagsLocationFromRequest definitionRequest ""
+    _ -> return maybeLocations
 
 semantidbLocationFromRequest :: DefinitionRequest -> IO ([L.Location])
 semantidbLocationFromRequest definitionRequest = do
@@ -59,23 +59,30 @@ semantidbLocationFromRequest definitionRequest = do
                   -- No, we have to search in all project files for the definition.
                   maybeResult <- findDefinitionInProjectFiles symbolOccurence
                   case maybeResult of
-                    Nothing -> return []
                     Just symbolWithTextDocument -> return <$> locationFromSymbolWithTextDocument symbolWithTextDocument
+                    Nothing -> do
+                      ctagsLocationFromRequest definitionRequest (extractHint symbolOccurence)
 
 
 defnitionWithOptimisticSearch :: S.SymbolOccurrence -> IO(Maybe (S.SymbolOccurrence, S.TextDocument))
 defnitionWithOptimisticSearch symbolOccurence =
   findFile (extractFileName symbolOccurence) >>= definitionFromFilePathes symbolOccurence
   where
-  findFile fileName = getCurrentDirectory >>= Find.find always (Find.fileName ==? fileName)
-  extractFileName :: S.SymbolOccurrence -> FilePath
-  extractFileName symbolOccurence =
-    let
-      takeName = List.takeWhile (\char -> not (char == '.' || char == '#'))
-      dropPrefixPath = List.reverse . List.takeWhile (/= '/') . List.reverse
-    in
-      (takeName . dropPrefixPath $ T.unpack (symbolOccurence^.symbol)) ++ ".scala.semanticdb"
+    findFile fileName = getCurrentDirectory >>= Find.find always (Find.fileName ==? fileName)
 
+extractFileName :: S.SymbolOccurrence -> FilePath
+extractFileName symbolOccurence =
+  let
+    takeName = List.takeWhile (\char -> not (char == '.' || char == '#'))
+    dropPrefixPath = List.reverse . List.takeWhile (/= '/') . List.reverse
+  in (takeName . dropPrefixPath $ T.unpack (symbolOccurence^.symbol)) ++ ".scala.semanticdb"
+
+extractHint :: S.SymbolOccurrence -> FilePath
+extractHint symbolOccurence =
+  let
+    takeName = List.takeWhile (\char -> not (char == '.' || char == '#'))
+    dropPrefixPath = List.reverse . List.takeWhile (/= '/') . List.reverse
+  in (takeName  $ T.unpack (symbolOccurence^.symbol))
 
 findDefinitionInProjectFiles :: S.SymbolOccurrence -> IO(Maybe (S.SymbolOccurrence, S.TextDocument))
 findDefinitionInProjectFiles symbolOccurence =

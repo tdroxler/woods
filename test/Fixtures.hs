@@ -17,7 +17,7 @@ barPath =  currentDirectory ++ "/src/main/scala/Bar.scala"
 
 modulePath =  currentDirectory ++ "/module/src/main/scala/Module.scala"
 
-predefPath =  currentDirectory ++ "/whatever-deps-folder/Predef.scala"
+predefPath =  currentDirectory ++ "/whatever-deps-folder/scala/Predef.scala"
 
 fooUri = Uri $ T.pack fooPath
 
