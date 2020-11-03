@@ -28,7 +28,7 @@ instance JSON.FromJSON Method
 
 main :: IO ()
 main = withSocketsDo $ do
-  forkIO serverLoop
+  --forkIO serverLoop
   listenClient
   where
     serverLoop = do

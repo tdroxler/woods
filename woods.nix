@@ -18,7 +18,7 @@ in mkDerivation {
     haskell-lsp-types microlens network proto-lens proto-lens-runtime
     text
   ];
-  libraryToolDepends = [ tags-lsp jq proto-lens-protoc ];
+  libraryToolDepends = [ proto-lens-protoc ];
   executableHaskellDepends = [
     aeson base bytestring haskell-lsp-types microlens network
     proto-lens proto-lens-runtime text
@@ -27,7 +27,8 @@ in mkDerivation {
     base bytestring directory haskell-lsp-types hspec microlens
     proto-lens text
   ];
-  testToolDepends = [ tags-lsp jq hspec-discover ];
+  testToolDepends = [ hspec-discover ];
+  executableSystemDepends = [ tags-lsp jq ];
   license = "unknown";
   hydraPlatforms = stdenv.lib.platforms.none;
 }
