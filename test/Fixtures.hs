@@ -2,7 +2,7 @@
 
 module Fixtures where
 
-import Language.Haskell.LSP.Types
+import Language.LSP.Types
 import System.Directory (getCurrentDirectory)
 import System.IO.Unsafe (unsafePerformIO)
 

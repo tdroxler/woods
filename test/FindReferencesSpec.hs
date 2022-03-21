@@ -3,7 +3,7 @@
 module FindReferencesSpec where
 
 import Test.Hspec
-import Language.Haskell.LSP.Types
+import Language.LSP.Types
 
 import System.Directory (setCurrentDirectory)
 

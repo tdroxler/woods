@@ -3,7 +3,7 @@
 module JumpToDefinitionSpec where
 
 import Test.Hspec
-import Language.Haskell.LSP.Types
+import Language.LSP.Types
 
 import JumpToDefinition
 import Fixtures

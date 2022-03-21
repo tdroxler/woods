@@ -1,7 +1,7 @@
 module Helpers where
 
 import Data.Text as T
-import qualified Language.Haskell.LSP.Types as L
+import qualified Language.LSP.Types as L
 import Data.Int
 import Lens.Micro
 import Data.List as List
@@ -25,8 +25,8 @@ isPosititionInRange position range =
   && L._character position <= int32ToInt  (range^.endCharacter)
 
 
-int32ToInt :: Int32 -> Int
-int32ToInt int32 = fromIntegral int32 :: Int
+int32ToInt :: Int32 -> L.UInt
+int32ToInt int32 = fromIntegral int32 :: L.UInt
 
 listAllfiles :: IO [FilePath]
 listAllfiles = getCurrentDirectory >>= Find.find always (extension ==? ".semanticdb")
